@@ -50,7 +50,6 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
             }
         }
     }
-
     @Override
     public void processAction(RequiredActionContext context) {
         var realm = context.getRealm();

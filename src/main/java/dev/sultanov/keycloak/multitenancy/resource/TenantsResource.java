@@ -1,12 +1,16 @@
 package dev.sultanov.keycloak.multitenancy.resource;
 
+import dev.sultanov.keycloak.multitenancy.model.TenantMembershipModel;
 import dev.sultanov.keycloak.multitenancy.model.TenantModel;
+import dev.sultanov.keycloak.multitenancy.resource.representation.TenantMembershipRepresentation;
 import dev.sultanov.keycloak.multitenancy.resource.representation.TenantRepresentation;
+import dev.sultanov.keycloak.multitenancy.resource.representation.UserMembershipRepresentation;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -25,6 +29,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.UserModel;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -169,6 +175,62 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
             log.error("Insufficient permissions for tenant ID: {}", tenantId);
             throw new ForbiddenException(String.format("Insufficient permission to access tenant %s", tenantId));
         }
+    }
+    
+    @GET
+    @Path("users/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "listMembershipsByUserId", summary = "List memberships for a specific user ID")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(type = SchemaType.ARRAY, implementation = UserMembershipRepresentation.class))),
+            @APIResponse(responseCode = "400", description = "Bad Request"),
+            @APIResponse(responseCode = "401", description = "Unauthorized"),
+            @APIResponse(responseCode = "404", description = "User not found"),
+            @APIResponse(responseCode = "500", description = "Internal Server Error")
+    })
+    public List<UserMembershipRepresentation> listMembershipsByUserId(
+            @Parameter(description = "User ID to fetch associated memberships") @PathParam("userId") String userId) {
+        log.debug("Listing memberships for user ID: {}", userId);
+
+        if (isNullOrWhitespace(userId)) {
+            log.error("User ID cannot be null or empty");
+            throw new BadRequestException("User ID cannot be null or empty");
+        }
+
+        List<UserMembershipRepresentation> memberships = tenantProvider.listMembershipsByUserId(realm, userId);
+        log.info("Fetched {} memberships for user ID: {}", memberships.size(), userId);
+        memberships.forEach(m -> log.debug("Membership: id={}, tenantId={}, roles={}", 
+                m.getId(), m.getTenantId(), m.getRoles()));
+        return memberships;
+    }
+    
+    @DELETE
+    @Path("{tenantId}/memberships/users/{userId}")
+    @Operation(operationId = "revokeMembershipByUserId", summary = "Revoke membership for a specific user in a tenant")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "No Content"),
+            @APIResponse(responseCode = "400", description = "Bad Request"),
+            @APIResponse(responseCode = "401", description = "Unauthorized"),
+            @APIResponse(responseCode = "403", description = "Forbidden"),
+            @APIResponse(responseCode = "404", description = "Tenant, User, or Membership not found"),
+            @APIResponse(responseCode = "500", description = "Internal Server Error")
+    })
+    public Response revokeMembershipByUserId(
+            @Parameter(description = "Tenant ID") @PathParam("tenantId") String tenantId,
+            @Parameter(description = "User ID to revoke membership") @PathParam("userId") String userId) {
+        log.debug("Attempting to revoke membership for tenant ID: {} and user ID: {}", tenantId, userId);
+
+        // Revoke membership
+        boolean revoked = tenantProvider.revokeMembership(realm, tenantId, userId);
+        if (!revoked) {
+            log.error("Failed to revoke membership for tenant ID: {} and user ID: {}", tenantId, userId);
+            throw new WebApplicationException(
+                    String.format("Failed to revoke membership for tenant %s and user %s", tenantId, userId),
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
+        log.info("Successfully revoked membership for tenant ID: {} and user ID: {}", tenantId, userId);
+        return Response.noContent().build();
     }
 
     private boolean isNullOrWhitespace(String str) {

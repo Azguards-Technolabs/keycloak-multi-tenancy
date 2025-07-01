@@ -1,11 +1,15 @@
 package dev.sultanov.keycloak.multitenancy.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
+
+import dev.sultanov.keycloak.multitenancy.resource.representation.TenantMembershipRepresentation;
+import dev.sultanov.keycloak.multitenancy.resource.representation.UserMembershipRepresentation;
 
 public interface TenantProvider extends Provider {
 
@@ -22,5 +26,9 @@ public interface TenantProvider extends Provider {
     Stream<TenantMembershipModel> getTenantMembershipsStream(RealmModel realm, UserModel user);
 
     Stream<TenantModel> getUserTenantsStream(RealmModel realm, UserModel user);
+
+    boolean revokeMembership(RealmModel realm, String tenantId, String userId);
+
+	List<UserMembershipRepresentation> listMembershipsByUserId(RealmModel realm, String userId);
 
 }

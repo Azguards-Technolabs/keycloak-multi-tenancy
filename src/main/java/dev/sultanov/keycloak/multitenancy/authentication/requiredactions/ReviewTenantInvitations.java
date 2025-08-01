@@ -66,7 +66,7 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
                 boolean hasMemberships = provider.getTenantMembershipsStream(realm, user).findAny().isPresent();
                 var challenge = context.form()
                         .setAttribute("data", TenantsBean.fromInvitations(invitations))
-                        .setAttribute("hasMemberships", hasMemberships) // Add membership status
+                        .setAttribute("hasMemberships", hasMemberships)
                         .createForm("review-invitations.ftl");
                 context.challenge(challenge);
             }

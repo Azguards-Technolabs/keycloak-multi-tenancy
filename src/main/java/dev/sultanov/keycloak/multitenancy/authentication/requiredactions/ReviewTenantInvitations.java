@@ -62,8 +62,11 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
                 context.success();
             } else {
                 log.infof("Presenting %d invitations to user: %s for review", invitations.size(), user.getId());
+                // Check if user has any tenant memberships
+                boolean hasMemberships = provider.getTenantMembershipsStream(realm, user).anyMatch(x -> true);
                 var challenge = context.form()
                         .setAttribute("data", TenantsBean.fromInvitations(invitations))
+                        .setAttribute("hasMemberships", hasMemberships)
                         .createForm("review-invitations.ftl");
                 context.challenge(challenge);
             }
@@ -108,6 +111,7 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
             var challenge = context.form()
                     .setError("You must accept at least one tenant invitation to proceed if you have no existing memberships.")
                     .setAttribute("data", TenantsBean.fromInvitations(invitations))
+                    .setAttribute("hasMemberships", hasMemberships)
                     .createForm("review-invitations.ftl");
             context.challenge(challenge);
             return;

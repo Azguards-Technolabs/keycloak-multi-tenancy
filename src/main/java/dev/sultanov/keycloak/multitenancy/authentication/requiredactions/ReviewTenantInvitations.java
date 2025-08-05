@@ -69,9 +69,9 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
                 log.infof("No invitations to review for user: %s, marking as success", user.getId());
                 context.success();
             } else {
-            	boolean hasMemberships = provider.getTenantMembershipsStream(context.getRealm(), user).anyMatch(x -> true);
-            	
                 log.infof("Presenting %d invitations to user: %s for review", invitations.size(), user.getId());
+                // Check if user has any tenant memberships
+                boolean hasMemberships = provider.getTenantMembershipsStream(realm, user).anyMatch(x -> true);
                 var challenge = context.form()
                         .setAttribute("data", TenantsBean.fromInvitations(invitations))
                         .setAttribute("hasMemberships", hasMemberships)

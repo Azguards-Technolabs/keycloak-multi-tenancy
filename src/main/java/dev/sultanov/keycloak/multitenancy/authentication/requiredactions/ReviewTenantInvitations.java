@@ -28,6 +28,7 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
     public static final String ID = "review-tenant-invitations";
     private static final String ACCEPTED_TENANTS_ATTR = "acceptedTenants";
     private static final String REJECTED_TENANTS_ATTR = "rejectedTenants";
+    public static final String REVIEWED_INVITATIONS = "tenantInvitationsReviewed";
 
     private final UserServiceRestClient userServiceRestClient = new UserServiceRestClient();
 
@@ -36,6 +37,13 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
         log.debugf("Evaluating triggers for user: %s in realm: %s", context.getUser().getId(), context.getRealm().getId());
         var realm = context.getRealm();
         var user = context.getUser();
+        
+        String reviewedInSession = context.getAuthenticationSession().getClientNote(REVIEWED_INVITATIONS);
+        if ("true".equals(reviewedInSession)) {
+            log.debugf("Skipping invitation review – already reviewed in session.");
+            return;
+        }
+        
         var provider = context.getSession().getProvider(TenantProvider.class);
         if (provider.getTenantInvitationsStream(realm, user).findAny().isPresent()) {
             log.infof("Pending invitations found for user: %s, adding required action: %s", user.getId(), ID);
@@ -61,9 +69,12 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
                 log.infof("No invitations to review for user: %s, marking as success", user.getId());
                 context.success();
             } else {
+            	boolean hasMemberships = provider.getTenantMembershipsStream(context.getRealm(), user).anyMatch(x -> true);
+            	
                 log.infof("Presenting %d invitations to user: %s for review", invitations.size(), user.getId());
                 var challenge = context.form()
                         .setAttribute("data", TenantsBean.fromInvitations(invitations))
+                        .setAttribute("hasMemberships", hasMemberships)
                         .createForm("review-invitations.ftl");
                 context.challenge(challenge);
             }
@@ -108,6 +119,7 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
             var challenge = context.form()
                     .setError("You must accept at least one tenant invitation to proceed if you have no existing memberships.")
                     .setAttribute("data", TenantsBean.fromInvitations(invitations))
+                    .setAttribute("hasMemberships", hasMemberships)
                     .createForm("review-invitations.ftl");
             context.challenge(challenge);
             return;
@@ -148,14 +160,12 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
                     if (ObjectUtils.isNotEmpty(inv.getInvitedBy())) {
                         log.debugf("Sending acceptance email for user: %s, tenant: %s, invited by: %s", 
                                    user.getId(), tenantName, inv.getInvitedBy());
-                        EmailSender.sendInvitationAcceptedEmail(context.getSession(), inv.getInvitedBy(), inv.getEmail(), tenantName);
                     }
                 } else if (rejectedTenants.contains(tenantId)) {
                     log.infof("Rejecting invitation for user: %s to tenant: %s", user.getId(), tenantName);
                     if (ObjectUtils.isNotEmpty(inv.getInvitedBy())) {
                         log.debugf("Sending rejection email for user: %s, tenant: %s, invited by: %s", 
                                    user.getId(), tenantName, inv.getInvitedBy());
-                        EmailSender.sendInvitationDeclinedEmail(context.getSession(), inv.getInvitedBy(), inv.getEmail(), tenantName);
                     }
                 }
                 log.debugf("Revoking invitation for user: %s, tenant: %s, invitation ID: %s", 
@@ -169,11 +179,13 @@ public class ReviewTenantInvitations implements RequiredActionProvider, Required
         if (provider.getTenantMembershipsStream(realm, user).findAny().isPresent()) {
             log.debugf("User: %s has memberships, removing CreateTenant and adding SelectActiveTenant action", user.getId());
             user.removeRequiredAction(CreateTenant.ID);
+            user.removeRequiredAction(ID);
             user.addRequiredAction(SelectActiveTenant.ID);
         } else {
             log.debugf("User: %s has no memberships after processing", user.getId());
         }
         log.infof("Action processing completed successfully for user: %s", user.getId());
+        context.getAuthenticationSession().setClientNote(REVIEWED_INVITATIONS, "true");
         context.success();
     }
 

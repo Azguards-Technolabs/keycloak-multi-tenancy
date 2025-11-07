@@ -14,6 +14,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.services.cors.Cors;
 import org.keycloak.models.RoleModel;
 
 import dev.sultanov.keycloak.multitenancy.util.TokenVerificationUtils;
@@ -103,7 +104,9 @@ public class SwitchActiveTenant {
 
         try {
             TokenManager tokenManager = new TokenManager(session, token, realm, user);
-            return Response.ok(tokenManager.generateTokens()).build();
+			return Cors.builder().auth().allowedMethods("GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+					.allowAllOrigins().preflight().add(Response.ok(tokenManager.generateTokens()));
+			// return Response.ok(tokenManager.generateTokens()).build();
         } catch (Exception e) {
             log.error("Error generating new tokens after tenant switch", e);
 

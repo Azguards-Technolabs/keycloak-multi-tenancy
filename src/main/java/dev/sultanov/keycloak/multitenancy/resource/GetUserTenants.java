@@ -8,6 +8,8 @@ import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.services.cors.Cors;
+
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -71,7 +73,9 @@ public class GetUserTenants {
                 })
                 .collect(Collectors.toList());
 
-        log.debugf("Returning %d tenants for user %s", tenants.size(), userId);
-        return Response.ok(tenants).build();
-    }
+		log.debugf("Returning %d tenants for user %s", tenants.size(), userId);
+//        return Response.ok(tenants).build();
+		return Cors.builder().auth().allowedMethods("GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+				.allowAllOrigins().preflight().add(Response.ok(tenants));
+	}
 }

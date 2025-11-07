@@ -15,6 +15,6 @@ public class CorsResource {
     @OPTIONS
     @Path("{any:.*}")
     public Response preflight() {
-        return Cors.builder().auth().allowedMethods(METHODS).preflight().add(Response.ok());
+        return Cors.builder().auth().allowedMethods(METHODS).allowAllOrigins().preflight().add(Response.ok());
     }
 }

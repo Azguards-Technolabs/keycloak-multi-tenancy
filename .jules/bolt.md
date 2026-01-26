@@ -1,0 +1,3 @@
+## 2026-01-26 - Optimized Tenant Listing for Regular Users
+**Learning:** `TenantsResource.listTenants` was fetching ALL tenants in the realm and then filtering them in memory for regular users. This is an O(N) operation where N is the total number of tenants, which causes significant performance degradation as the number of tenants grows.
+**Action:** Replaced the logic to use `TenantProvider.getUserTenantsStream` for regular users, which uses a database JOIN to efficiently fetch only the relevant tenants (O(M) where M is the user's tenants). This required a small refactor in `AbstractAdminResource` to allow unit testing.

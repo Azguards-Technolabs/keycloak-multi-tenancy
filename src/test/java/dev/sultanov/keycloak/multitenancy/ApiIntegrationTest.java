@@ -223,6 +223,51 @@ public class ApiIntegrationTest extends BaseIntegrationTest {
         assertThat(tenantResource.toRepresentation().getName()).isEqualTo(newName);
     }
 
+    @Test
+    void regularUser_shouldOnlyListOwnTenants() {
+        // given
+        var user = keycloakAdminClient.createVerifiedUser();
+        var userTenantResource = user.createTenant();
+        var userTenant = userTenantResource.toRepresentation();
+
+        // when
+        var tenants = user.tenantsResource().listTenants(null, null, null, null);
+
+        // then
+        assertThat(tenants).extracting(TenantRepresentation::getId)
+                .containsExactly(userTenant.getId())
+                .doesNotContain(tenant.getId(), tenantsManagerTenant.getId());
+
+        // cleanup
+        userTenantResource.deleteTenant();
+        keycloakAdminClient.getRealmResource().users().delete(user.getUserId());
+    }
+
+    @Test
+    void regularUser_shouldFilterOwnTenants() {
+        // given
+        var user = keycloakAdminClient.createVerifiedUser();
+        var userTenantResource = user.createTenant();
+        var userTenant = userTenantResource.toRepresentation();
+
+        // when
+        var tenants = user.tenantsResource().listTenants(userTenant.getMobileNumber(), null, null, null);
+
+        // then
+        assertThat(tenants).extracting(TenantRepresentation::getId)
+                .containsExactly(userTenant.getId());
+
+        // when filtered by wrong mobile number
+        tenants = user.tenantsResource().listTenants("wrong-mobile", null, null, null);
+
+        // then
+        assertThat(tenants).isEmpty();
+
+        // cleanup
+        userTenantResource.deleteTenant();
+        keycloakAdminClient.getRealmResource().users().delete(user.getUserId());
+    }
+
     private static void assignTenantsManagementRole(KeycloakUser user) {
         keycloakAdminClient.assignClientRoleToUser(
                 org.keycloak.models.Constants.REALM_MANAGEMENT_CLIENT_ID,

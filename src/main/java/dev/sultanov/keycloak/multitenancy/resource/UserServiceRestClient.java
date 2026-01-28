@@ -18,7 +18,7 @@ import java.util.List;
 public class UserServiceRestClient {
 
     private static final Logger log = Logger.getLogger(UserServiceRestClient.class);
-    private static final String USER_SERVICE_URL = "http://localhost:4003/user-service/v1/business/updateStatus";
+    private static final String USER_SERVICE_URL = "http://host.docker.internal:4003/user-service/v1/business/updateStatus";
 
     private final HttpClient httpClient;
 

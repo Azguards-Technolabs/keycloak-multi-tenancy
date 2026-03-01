@@ -138,16 +138,30 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
 
         log.debug("Listing tenants with mobileNumber: {}, countryCode: {}", mobileNumber, countryCode);
 
-        Stream<TenantModel> tenantStream = tenantProvider.getTenantsStream(
-                realm,
-                null,     
-                Map.of(),
-                mobileNumber,
-                countryCode
-        );
+        Stream<TenantModel> tenantStream;
+
+        if (auth.isTenantsManager()) {
+            tenantStream = tenantProvider.getTenantsStream(
+                    realm,
+                    null,
+                    Map.of(),
+                    mobileNumber,
+                    countryCode
+            );
+        } else {
+            // Optimization: Fetch only tenants the user is a member of
+            tenantStream = tenantProvider.getUserTenantsStream(realm, auth.getUser());
+
+            // Apply filters in memory since getUserTenantsStream doesn't support them yet
+            if (!isNullOrWhitespace(mobileNumber)) {
+                tenantStream = tenantStream.filter(t -> mobileNumber.equals(t.getMobileNumber()));
+            }
+            if (!isNullOrWhitespace(countryCode)) {
+                tenantStream = tenantStream.filter(t -> countryCode.equals(t.getCountryCode()));
+            }
+        }
 
         Stream<TenantRepresentation> result = tenantStream
-                .filter(tenant -> auth.isTenantsManager() || auth.isTenantMember(tenant))
                 .map(ModelMapper::toRepresentation);
 
         log.debug("Returning tenant stream for mobileNumber: {}, countryCode: {}", mobileNumber, countryCode);

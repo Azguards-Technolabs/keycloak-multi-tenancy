@@ -53,7 +53,7 @@ public abstract class AbstractAdminResource<T extends AdminAuth> {
         this.tenantProvider = parent.tenantProvider;
     }
 
-    private void setup() {
+    protected void setup() {
         setupAuth();
         setupEvents();
         setupProvider();

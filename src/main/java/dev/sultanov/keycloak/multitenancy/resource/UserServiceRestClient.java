@@ -4,6 +4,7 @@ import dev.sultanov.keycloak.multitenancy.dto.BusinessStatus;
 import dev.sultanov.keycloak.multitenancy.dto.BusinessStatusEntry;
 import dev.sultanov.keycloak.multitenancy.dto.BusinessStatusRequest;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.util.JsonSerialization;
 
@@ -13,7 +14,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 public class UserServiceRestClient {
 
@@ -30,37 +35,53 @@ public class UserServiceRestClient {
     }
 
     public void updateUserTenantInvitationStatuses(String userId, List<String> accepted, List<String> rejected) {
-        log.infof("Starting user service update for userId: %s, accepted: %s, rejected: %s", 
-                  userId, accepted, rejected);
+        Span span = TracingHelper.startClientSpan("user-service.updateStatus");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            span.tag("user.id", userId);
+            span.tag("http.url", USER_SERVICE_URL);
+            span.tag("http.method", "PATCH");
 
-        if (ObjectUtils.isEmpty(accepted) && ObjectUtils.isEmpty(rejected)) {
-            log.infof("No tenant invitations to update for userId: %s, skipping request", userId);
-            return;
-        }
+            log.infof("Starting user service update for userId: %s, accepted: %s, rejected: %s", 
+                      userId, accepted, rejected);
 
-        List<BusinessStatusEntry> businessStatusList = new ArrayList<>();
+            if (ObjectUtils.isEmpty(accepted) && ObjectUtils.isEmpty(rejected)) {
+                log.infof("No tenant invitations to update for userId: %s, skipping request", userId);
+                return;
+            }
 
-        if (!ObjectUtils.isEmpty(accepted)) {
-            businessStatusList.add(new BusinessStatusEntry(BusinessStatus.ACTIVE.name(), accepted));
-            log.debugf("Added Active status for userId: %s with businessIds: %s", userId, accepted);
-        }
+            List<BusinessStatusEntry> businessStatusList = new ArrayList<>();
 
-        if (!ObjectUtils.isEmpty(rejected)) {
-            businessStatusList.add(new BusinessStatusEntry(BusinessStatus.INACTIVE.name(), rejected));
-            log.debugf("Added Reject status for userId: %s with businessIds: %s", userId, rejected);
-        }
+            if (!ObjectUtils.isEmpty(accepted)) {
+                businessStatusList.add(new BusinessStatusEntry(BusinessStatus.ACTIVE.name(), accepted));
+                log.debugf("Added Active status for userId: %s with businessIds: %s", userId, accepted);
+            }
 
-        BusinessStatusRequest finalPayload = new BusinessStatusRequest(businessStatusList);
+            if (!ObjectUtils.isEmpty(rejected)) {
+                businessStatusList.add(new BusinessStatusEntry(BusinessStatus.INACTIVE.name(), rejected));
+                log.debugf("Added Reject status for userId: %s with businessIds: %s", userId, rejected);
+            }
 
-        try {
+            BusinessStatusRequest finalPayload = new BusinessStatusRequest(businessStatusList);
+
             String json = JsonSerialization.writeValueAsString(finalPayload);
             log.infof("Prepared payload for userId: %s: %s", userId, json);
 
-            HttpRequest request = HttpRequest.newBuilder()
+            Map<String, String> traceHeaders = new HashMap<>();
+            TracingHelper.injectB3Headers(span, traceHeaders);
+
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(USER_SERVICE_URL))
                 .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
-                .header("userId", userId)
+                .header("userId", userId);
+            traceHeaders.forEach((k, v) -> {
+                if (StringUtils.isNotBlank(v)) {
+                    reqBuilder.header(k, v);
+                }
+            });
+
+            HttpRequest request = reqBuilder
                 .method("PATCH", HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
@@ -68,6 +89,7 @@ public class UserServiceRestClient {
                        userId, USER_SERVICE_URL);
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            span.tag("http.status_code", String.valueOf(response.statusCode()));
 
             log.infof("Received response from user service for userId: %s, status: %d, body: %s", 
                       userId, response.statusCode(), response.body());
@@ -82,8 +104,11 @@ public class UserServiceRestClient {
             }
 
         } catch (Exception ex) {
+            traceError = ex;
             log.errorf(ex, "Exception while processing user service update for userId: %s", userId);
             throw new RuntimeException("Error during user service status update: " + ex.getMessage(), ex);
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 }

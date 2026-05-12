@@ -10,14 +10,15 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.ObjectUtils; // Import Apache Commons Lang ObjectUtils
-import org.apache.commons.lang3.StringUtils; // Import Apache Commons Lang StringUtils
+import org.apache.commons.lang3.ObjectUtils;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -44,8 +45,18 @@ public class TenantResource extends AbstractAdminResource<TenantAdminAuth> {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
-    public TenantRepresentation getTenant() {
-        return ModelMapper.toRepresentation(tenant);
+    public TenantRepresentation getTenant(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.HttpHeaders headers) {
+        Span span = TracingHelper.startServerSpan("tenant.get", headers);
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            span.tag("tenant.id", tenant.getId());
+            return ModelMapper.toRepresentation(tenant);
+        } catch (Exception e) {
+            traceError = e;
+            throw e;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
+        }
     }
 
     @PUT
@@ -58,38 +69,48 @@ public class TenantResource extends AbstractAdminResource<TenantAdminAuth> {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
-    public Response updateTenant(TenantRepresentation request) {
-        if (StringUtils.isNotEmpty(request.getName())) {
-            tenant.setName(request.getName());
-        }
-        if (StringUtils.isNotEmpty(request.getMobileNumber())) {
-            tenant.setMobileNumber(request.getMobileNumber());
-        }
-        if (StringUtils.isNotEmpty(request.getCountryCode())) {
-            tenant.setCountryCode(request.getCountryCode());
-        }
-        if (StringUtils.isNotEmpty(request.getStatus())) {
-            tenant.setStatus(request.getStatus());
-        }
-
-        if (ObjectUtils.isNotEmpty(request.getAttributes())) {
-            Set<String> attrsToRemove = new HashSet<>(tenant.getAttributes().keySet());
-            attrsToRemove.removeAll(request.getAttributes().keySet());
-
-            for (Map.Entry<String, List<String>> attr : request.getAttributes().entrySet()) {
-                tenant.setAttribute(attr.getKey(), attr.getValue());
+    public Response updateTenant(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.HttpHeaders headers, TenantRepresentation request) {
+        Span span = TracingHelper.startServerSpan("tenant.update", headers);
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            span.tag("tenant.id", tenant.getId());
+            if (ObjectUtils.isNotEmpty(request.getName())) {
+                tenant.setName(request.getName());
             }
-            for (String attr : attrsToRemove) {
-                tenant.removeAttribute(attr);
+            if (ObjectUtils.isNotEmpty(request.getMobileNumber())) {
+                tenant.setMobileNumber(request.getMobileNumber());
             }
+            if (ObjectUtils.isNotEmpty(request.getCountryCode())) {
+                tenant.setCountryCode(request.getCountryCode());
+            }
+            if (ObjectUtils.isNotEmpty(request.getStatus())) {
+                tenant.setStatus(request.getStatus());
+            }
+
+            if (ObjectUtils.isNotEmpty(request.getAttributes())) {
+                Set<String> attrsToRemove = new HashSet<>(tenant.getAttributes().keySet());
+                attrsToRemove.removeAll(request.getAttributes().keySet());
+
+                for (Map.Entry<String, List<String>> attr : request.getAttributes().entrySet()) {
+                    tenant.setAttribute(attr.getKey(), attr.getValue());
+                }
+                for (String attr : attrsToRemove) {
+                    tenant.removeAttribute(attr);
+                }
+            }
+
+            adminEvent.operation(OperationType.UPDATE)
+                    .resourcePath(session.getContext().getUri())
+                    .representation(ModelMapper.toRepresentation(tenant))
+                    .success();
+
+            return Response.noContent().build();
+        } catch (Exception e) {
+            traceError = e;
+            throw e;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
-
-        adminEvent.operation(OperationType.UPDATE)
-                .resourcePath(session.getContext().getUri())
-                .representation(ModelMapper.toRepresentation(tenant))
-                .success();
-
-        return Response.noContent().build();
     }
 
 
@@ -100,11 +121,21 @@ public class TenantResource extends AbstractAdminResource<TenantAdminAuth> {
             @APIResponse(responseCode = "401", description = "Unauthorized"),
             @APIResponse(responseCode = "403", description = "Forbidden")
     })
-    public void deleteTenant() {
-        if (tenantProvider.deleteTenant(realm, tenant.getId())) {
-            adminEvent.operation(OperationType.DELETE)
-                    .resourcePath(session.getContext().getUri())
-                    .success();
+    public void deleteTenant(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.HttpHeaders headers) {
+        Span span = TracingHelper.startServerSpan("tenant.delete", headers);
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            span.tag("tenant.id", tenant.getId());
+            if (tenantProvider.deleteTenant(realm, tenant.getId())) {
+                adminEvent.operation(OperationType.DELETE)
+                        .resourcePath(session.getContext().getUri())
+                        .success();
+            }
+        } catch (Exception e) {
+            traceError = e;
+            throw e;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 

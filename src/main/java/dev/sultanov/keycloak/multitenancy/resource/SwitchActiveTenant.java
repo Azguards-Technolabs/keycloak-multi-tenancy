@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
@@ -31,6 +30,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 public class SwitchActiveTenant {
 
@@ -48,82 +49,94 @@ public class SwitchActiveTenant {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response switchActiveTenant(@Context HttpHeaders headers, SwitchTenantRequest request) {
-        TokenVerificationUtils.TokenVerificationResult verificationResult = 
-                TokenVerificationUtils.verifyToken(session, headers);
-        if (!verificationResult.isSuccess()) {
-            return verificationResult.getErrorResponse();
-        }
+        Span span = TracingHelper.startServerSpan("tenant.switch");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            if (ObjectUtils.isNotEmpty(request)) {
+                span.tag("tenant.target", request.getTenantId());
+            }
+            TokenVerificationUtils.TokenVerificationResult verificationResult = 
+                    TokenVerificationUtils.verifyToken(session, headers);
+            if (!verificationResult.isSuccess()) {
+                return verificationResult.getErrorResponse();
+            }
 
-        AccessToken token = verificationResult.getToken();
-        UserModel user = verificationResult.getUser();
-        RealmModel realm = session.getContext().getRealm();
+            AccessToken token = verificationResult.getToken();
+            UserModel user = verificationResult.getUser();
+            RealmModel realm = session.getContext().getRealm();
 
-        if (ObjectUtils.isEmpty(request) || StringUtils.isEmpty(request.getTenantId())) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Collections.singletonMap("message", "Tenant ID is required"))
-                    .build();
-        }
-
-        TenantProvider tenantProvider = session.getProvider(TenantProvider.class);
-        if (ObjectUtils.isEmpty(tenantProvider)) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Collections.singletonMap("message", "TenantProvider not available"))
-                    .build();
-        }
-
-        TenantModel targetTenant = tenantProvider.getUserTenantsStream(realm, user)
-                .filter(t -> t.getId().equals(request.getTenantId()))
-                .findFirst()
-                .orElse(null);
-
-        if (ObjectUtils.isEmpty(targetTenant)) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Collections.singletonMap("message", "User does not have access to the specified tenant"))
-                    .build();
-        }
-
-        String currentActiveOrganization = user.getFirstAttribute(ACTIVE_TENANT_ATTRIBUTE);
-        user.setSingleAttribute(ACTIVE_TENANT_ATTRIBUTE, request.getTenantId());
-
-        // Also store in session note for protocol mapper
-        UserSessionModel userSession = session.sessions().getUserSession(realm, token.getId());
-        if (userSession != null) {
-            userSession.setNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, request.getTenantId());
-        }
-
-        log.info("User " + user.getId() + " switched active tenant from " +
-                (StringUtils.isEmpty(currentActiveOrganization) ? "none" : currentActiveOrganization) +
-                " to " + request.getTenantId());
-
-        EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
-        event.event(EventType.UPDATE_PROFILE)
-                .user(user)
-                .detail("new_active_organization_id", request.getTenantId())
-                .detail("previous_active_organization_id", currentActiveOrganization)
-                .success();
-
-        try {
-            TokenManager tokenManager = new TokenManager(session, token, realm, user);
-			return Cors.builder().auth().allowedMethods("GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-					.allowAllOrigins().preflight().add(Response.ok(tokenManager.generateTokens()));
-			// return Response.ok(tokenManager.generateTokens()).build();
-        } catch (Exception e) {
-            log.error("Error generating new tokens after tenant switch", e);
-
-            try {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("message", "Active tenant switched to " + request.getTenantId());
-                response.put("tenantId", request.getTenantId());
-                response.put("note", "Please refresh your tokens using the refresh_token endpoint");
-
-                return Response.ok(response).build();
-            } catch (Exception fallbackEx) {
-                log.error("Fallback response also failed", fallbackEx);
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .entity(Collections.singletonMap("message", "Could not generate tokens after tenant switch"))
+            if (ObjectUtils.isEmpty(request) || ObjectUtils.isEmpty(request.getTenantId())) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Collections.singletonMap("message", "Tenant ID is required"))
                         .build();
             }
+
+            TenantProvider tenantProvider = session.getProvider(TenantProvider.class);
+            if (ObjectUtils.isEmpty(tenantProvider)) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(Collections.singletonMap("message", "TenantProvider not available"))
+                        .build();
+            }
+
+            TenantModel targetTenant = tenantProvider.getUserTenantsStream(realm, user)
+                    .filter(t -> t.getId().equals(request.getTenantId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (ObjectUtils.isEmpty(targetTenant)) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Collections.singletonMap("message", "User does not have access to the specified tenant"))
+                        .build();
+            }
+
+            String currentActiveOrganization = user.getFirstAttribute(ACTIVE_TENANT_ATTRIBUTE);
+            user.setSingleAttribute(ACTIVE_TENANT_ATTRIBUTE, request.getTenantId());
+
+            // Also store in session note for protocol mapper
+            UserSessionModel userSession = session.sessions().getUserSession(realm, token.getId());
+            if (userSession != null) {
+                userSession.setNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, request.getTenantId());
+            }
+
+            log.info("User " + user.getId() + " switched active tenant from " +
+                    (ObjectUtils.isEmpty(currentActiveOrganization) ? "none" : currentActiveOrganization) +
+                    " to " + request.getTenantId());
+
+            EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
+            event.event(EventType.UPDATE_PROFILE)
+                    .user(user)
+                    .detail("new_active_organization_id", request.getTenantId())
+                    .detail("previous_active_organization_id", currentActiveOrganization)
+                    .success();
+
+            try {
+                TokenManager tokenManager = new TokenManager(session, token, realm, user);
+                return Cors.builder().auth().allowedMethods("GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                        .allowAllOrigins().preflight().add(Response.ok(tokenManager.generateTokens()));
+                // return Response.ok(tokenManager.generateTokens()).build();
+            } catch (Exception e) {
+                log.error("Error generating new tokens after tenant switch", e);
+
+                try {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", true);
+                    response.put("message", "Active tenant switched to " + request.getTenantId());
+                    response.put("tenantId", request.getTenantId());
+                    response.put("note", "Please refresh your tokens using the refresh_token endpoint");
+
+                    return Response.ok(response).build();
+                } catch (Exception fallbackEx) {
+                    log.error("Fallback response also failed", fallbackEx);
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity(Collections.singletonMap("message", "Could not generate tokens after tenant switch"))
+                            .build();
+                }
+            }
+        } catch (Exception e) {
+            traceError = e;
+            throw e;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 }

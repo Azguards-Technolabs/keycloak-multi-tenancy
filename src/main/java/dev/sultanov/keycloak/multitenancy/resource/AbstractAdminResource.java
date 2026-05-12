@@ -1,6 +1,7 @@
 package dev.sultanov.keycloak.multitenancy.resource;
 
 import dev.sultanov.keycloak.multitenancy.model.TenantProvider;
+import org.apache.commons.lang3.ObjectUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.NotAuthorizedException;
 import java.lang.reflect.Constructor;
@@ -72,7 +73,7 @@ public abstract class AbstractAdminResource<T extends AdminAuth> {
     private void setupAuth() {
         var tokenString = AppAuthManager.extractAuthorizationHeaderToken(session.getContext().getRequestHeaders());
 
-        if (tokenString == null) {
+        if (ObjectUtils.isEmpty(tokenString)) {
             throw new NotAuthorizedException("Bearer");
         }
 
@@ -89,7 +90,7 @@ public abstract class AbstractAdminResource<T extends AdminAuth> {
         var realmManager = new RealmManager(session);
         var realm = realmManager.getRealmByName(realmName);
 
-        if (realm == null) {
+        if (ObjectUtils.isEmpty(realm)) {
             throw new NotAuthorizedException("Unknown realm in token");
         }
         session.getContext().setRealm(realm);
@@ -100,7 +101,7 @@ public abstract class AbstractAdminResource<T extends AdminAuth> {
                 .setConnection(session.getContext().getConnection())
                 .setHeaders(session.getContext().getRequestHeaders())
                 .authenticate();
-        if (authResult == null) {
+        if (ObjectUtils.isEmpty(authResult)) {
             throw new NotAuthorizedException("Bearer");
         }
 

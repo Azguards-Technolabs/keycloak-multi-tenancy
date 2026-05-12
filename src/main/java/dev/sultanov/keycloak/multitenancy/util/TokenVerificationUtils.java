@@ -1,7 +1,6 @@
 package dev.sultanov.keycloak.multitenancy.util;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.keycloak.TokenVerifier;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -25,7 +24,7 @@ public class TokenVerificationUtils {
 
         // Extract and validate Authorization header
         String authHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.isEmpty(authHeader) || !authHeader.startsWith("Bearer ")) {
+        if (ObjectUtils.isEmpty(authHeader) || !authHeader.startsWith("Bearer ")) {
             return TokenVerificationResult.error(
                     Response.status(Response.Status.UNAUTHORIZED)
                             .entity(Collections.singletonMap("message", "Missing or invalid Authorization header"))

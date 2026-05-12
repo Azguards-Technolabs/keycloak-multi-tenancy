@@ -18,7 +18,7 @@
 
     <properties>
         <keycloak.version>26.0.7</keycloak.version>
-        <keycloak.client.version>26.0.3</keycloak.client.version>
+        <keycloak.client.version>26.0.7</keycloak.client.version>
     </properties>
 
     <dependencies>
@@ -73,7 +73,7 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-open-api-jaxrs</artifactId>
             <version>4.0.5</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -112,6 +112,44 @@
             <version>1.0.2</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Brave Tracing core -->
+        <dependency>
+            <groupId>io.zipkin.brave</groupId>
+            <artifactId>brave</artifactId>
+            <version>6.0.3</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Zipkin API and Reporter core -->
+        <dependency>
+            <groupId>io.zipkin.zipkin2</groupId>
+            <artifactId>zipkin</artifactId>
+            <version>3.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter</artifactId>
+            <version>3.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Zipkin HTTP sender -->
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-sender-urlconnection</artifactId>
+            <version>3.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Bridge between Brave and Zipkin Reporter -->
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter-brave</artifactId>
+            <version>3.4.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -128,6 +166,37 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>brave</pattern>
+                                    <shadedPattern>dev.sultanov.shaded.brave</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>zipkin2</pattern>
+                                    <shadedPattern>dev.sultanov.shaded.zipkin2</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -175,11 +175,11 @@
               }
             }
           },
-          "400" : {
-            "description" : "Bad Request"
-          },
           "401" : {
             "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
           },
           "500" : {
             "description" : "Internal Server Error"
@@ -230,7 +230,7 @@
     },
     "/tenants/users/{userId}" : {
       "get" : {
-        "summary" : "List memberships for a specific user ID",
+        "summary" : "List memberships by user ID",
         "operationId" : "listMembershipsByUserId",
         "parameters" : [ {
           "description" : "User ID to fetch associated memberships",
@@ -255,14 +255,11 @@
               }
             }
           },
-          "400" : {
-            "description" : "Bad Request"
-          },
           "401" : {
             "description" : "Unauthorized"
           },
-          "404" : {
-            "description" : "User not found"
+          "403" : {
+            "description" : "Forbidden"
           },
           "500" : {
             "description" : "Internal Server Error"
@@ -565,7 +562,7 @@
     },
     "/tenants/{tenantId}/memberships/users/{userId}" : {
       "delete" : {
-        "summary" : "Revoke membership for a specific user in a tenant",
+        "summary" : "Revoke membership by user ID",
         "operationId" : "revokeMembershipByUserId",
         "parameters" : [ {
           "description" : "Tenant ID",
@@ -588,17 +585,11 @@
           "204" : {
             "description" : "No Content"
           },
-          "400" : {
-            "description" : "Bad Request"
-          },
           "401" : {
             "description" : "Unauthorized"
           },
           "403" : {
             "description" : "Forbidden"
-          },
-          "404" : {
-            "description" : "Tenant, User, or Membership not found"
           },
           "500" : {
             "description" : "Internal Server Error"

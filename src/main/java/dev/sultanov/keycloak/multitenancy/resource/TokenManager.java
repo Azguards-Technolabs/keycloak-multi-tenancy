@@ -24,6 +24,8 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 public class TokenManager {
 
@@ -51,57 +53,69 @@ public class TokenManager {
     }
 
     public AccessTokenResponse generateTokens() {
-        AuthenticationSessionModel authSession = getAuthSession(getScopeIds());
+        Span span = TracingHelper.startServerSpan("token.generate");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            span.tag("user.id", user.getId());
+            span.tag("realm", realm.getName());
 
-        EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
-        ClientSessionContext clientSessionCtx = AuthenticationProcessor.attachSession(authSession, null, session, realm, session.getContext().getConnection(), event);
-        UserSessionModel userSession = clientSessionCtx.getClientSession().getUserSession();
+            AuthenticationSessionModel authSession = getAuthSession(getScopeIds());
 
-        org.keycloak.protocol.oidc.TokenManager tokenManager = new org.keycloak.protocol.oidc.TokenManager();
-        AccessTokenResponseBuilder responseBuilder = tokenManager
-                .responseBuilder(realm, targetClient, event, session, userSession, clientSessionCtx)
-                .generateAccessToken();
+            EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
+            ClientSessionContext clientSessionCtx = AuthenticationProcessor.attachSession(authSession, null, session, realm, session.getContext().getConnection(), event);
+            UserSessionModel userSession = clientSessionCtx.getClientSession().getUserSession();
 
-        responseBuilder.getAccessToken().audience(accessToken.getAudience());
-        responseBuilder.getAccessToken().setAllowedOrigins(accessToken.getAllowedOrigins());
+            org.keycloak.protocol.oidc.TokenManager tokenManager = new org.keycloak.protocol.oidc.TokenManager();
+            AccessTokenResponseBuilder responseBuilder = tokenManager
+                    .responseBuilder(realm, targetClient, event, session, userSession, clientSessionCtx)
+                    .generateAccessToken();
 
-        // Add all_tenants claim
-        List<Map<String, Object>> allTenants = getAllTenants(userSession, session);
-        if (!allTenants.isEmpty()) {
-            responseBuilder.getAccessToken().getOtherClaims().put("all_tenants", allTenants);
-            logger.infof("Added all_tenants claim to access token for user %s: %s", userSession.getUser().getId(), allTenants);
-        } else {
-            logger.warnf("No tenants found for all_tenants claim for user: %s", userSession.getUser().getId());
-        }
+            responseBuilder.getAccessToken().audience(accessToken.getAudience());
+            responseBuilder.getAccessToken().setAllowedOrigins(accessToken.getAllowedOrigins());
 
-        // Add active_tenant claim
-        Map<String, Object> activeTenant = getActiveTenant(userSession, session);
-        if (ObjectUtils.isNotEmpty(activeTenant)) {
-            responseBuilder.getAccessToken().getOtherClaims().put("active_tenant", activeTenant);
-            logger.infof("Added active_tenant claim to access token for user %s: %s", userSession.getUser().getId(), activeTenant);
-        } else {
-            logger.warnf("No active tenant found for user: %s", userSession.getUser().getId());
-        }
-
-        boolean useRefreshToken = targetClientConfig.isUseRefreshToken();
-        if (useRefreshToken) {
-            responseBuilder.generateRefreshToken();
-        }
-
-        String scopeParam = clientSessionCtx.getClientSession().getNote(OAuth2Constants.SCOPE);
-        if (org.keycloak.util.TokenUtil.isOIDCRequest(scopeParam)) {
-            responseBuilder.generateIDToken();
-            if (ObjectUtils.isNotEmpty(responseBuilder.getIdToken()) && ObjectUtils.isNotEmpty(activeTenant)) {
-                responseBuilder.getIdToken().getOtherClaims().put("active_tenant", activeTenant);
-                responseBuilder.getIdToken().getOtherClaims().put("all_tenants", allTenants);
-                logger.infof("Added active_tenant and all_tenants claims to ID token for user %s: %s", userSession.getUser().getId(), activeTenant);
+            // Add all_tenants claim
+            List<Map<String, Object>> allTenants = getAllTenants(userSession, session);
+            if (!allTenants.isEmpty()) {
+                responseBuilder.getAccessToken().getOtherClaims().put("all_tenants", allTenants);
+                logger.infof("Added all_tenants claim to access token for user %s: %s", userSession.getUser().getId(), allTenants);
+            } else {
+                logger.warnf("No tenants found for all_tenants claim for user: %s", userSession.getUser().getId());
             }
-            responseBuilder.generateAccessTokenHash();
+
+            // Add active_tenant claim
+            Map<String, Object> activeTenant = getActiveTenant(userSession, session);
+            if (ObjectUtils.isNotEmpty(activeTenant)) {
+                responseBuilder.getAccessToken().getOtherClaims().put("active_tenant", activeTenant);
+                logger.infof("Added active_tenant claim to access token for user %s: %s", userSession.getUser().getId(), activeTenant);
+            } else {
+                logger.warnf("No active tenant found for user: %s", userSession.getUser().getId());
+            }
+
+            boolean useRefreshToken = targetClientConfig.isUseRefreshToken();
+            if (useRefreshToken) {
+                responseBuilder.generateRefreshToken();
+            }
+
+            String scopeParam = clientSessionCtx.getClientSession().getNote(OAuth2Constants.SCOPE);
+            if (org.keycloak.util.TokenUtil.isOIDCRequest(scopeParam)) {
+                responseBuilder.generateIDToken();
+                if (ObjectUtils.isNotEmpty(responseBuilder.getIdToken()) && ObjectUtils.isNotEmpty(activeTenant)) {
+                    responseBuilder.getIdToken().getOtherClaims().put("active_tenant", activeTenant);
+                    responseBuilder.getIdToken().getOtherClaims().put("all_tenants", allTenants);
+                    logger.infof("Added active_tenant and all_tenants claims to ID token for user %s: %s", userSession.getUser().getId(), activeTenant);
+                }
+                responseBuilder.generateAccessTokenHash();
+            }
+
+            checkAndBindMtlsHoKToken(event, responseBuilder, useRefreshToken);
+
+            return responseBuilder.build();
+        } catch (Exception e) {
+            traceError = e;
+            throw e;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
-
-        checkAndBindMtlsHoKToken(event, responseBuilder, useRefreshToken);
-
-        return responseBuilder.build();
     }
 
     private List<Map<String, Object>> getAllTenants(UserSessionModel userSession, KeycloakSession session) {

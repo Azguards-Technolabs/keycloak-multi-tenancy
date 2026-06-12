@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationProcessor;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.broker.provider.AbstractIdentityProvider;
 import org.keycloak.broker.provider.AuthenticationRequest;
 import org.keycloak.broker.provider.IdentityProvider;
 import org.keycloak.broker.provider.IdentityProviderFactory;
@@ -54,7 +55,7 @@ public class LoginWithSsoAuthenticator implements Authenticator {
         IdentityProviderFactory factory = (IdentityProviderFactory) keycloakSession
                 .getKeycloakSessionFactory()
                 .getProviderFactory(IdentityProvider.class, idp.getProviderId());
-        var identityProvider = factory.create(keycloakSession, idp);
+        var identityProvider = (AbstractIdentityProvider<?>) factory.create(keycloakSession, idp);
         var authenticationRequest = createAuthenticationRequest(context, providerAlias);
         var response = identityProvider.performLogin(authenticationRequest);
         context.forceChallenge(response);

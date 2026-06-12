@@ -4,7 +4,7 @@
 
     <groupId>dev.sultanov</groupId>
     <artifactId>keycloak-multi-tenancy</artifactId>
-    <version>26.4.7</version>
+    <version>26.6.3</version>
     <packaging>jar</packaging>
 
     <name>Keycloak Multi-Tenancy</name>
@@ -17,7 +17,7 @@
     </licenses>
 
     <properties>
-        <keycloak.version>26.4.6</keycloak.version>
+        <keycloak.version>26.6.3</keycloak.version>
         <keycloak.client.version>26.0.9</keycloak.client.version>
     </properties>
 
@@ -199,6 +199,36 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.keycloak:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.glassfish.jaxb:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>jakarta.xml.bind:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.jboss.resteasy:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>jakarta.ws.rs:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

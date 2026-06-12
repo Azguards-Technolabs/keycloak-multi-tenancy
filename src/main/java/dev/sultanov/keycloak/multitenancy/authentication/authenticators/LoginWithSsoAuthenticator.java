@@ -1,13 +1,14 @@
 package dev.sultanov.keycloak.multitenancy.authentication.authenticators;
 
 import static java.util.function.Predicate.not;
-import static org.keycloak.services.resources.IdentityBrokerService.getIdentityProviderFactory;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationProcessor;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.broker.provider.AuthenticationRequest;
+import org.keycloak.broker.provider.IdentityProvider;
+import org.keycloak.broker.provider.IdentityProviderFactory;
 import org.keycloak.broker.provider.util.IdentityBrokerState;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
@@ -45,11 +46,15 @@ public class LoginWithSsoAuthenticator implements Authenticator {
         }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void performLogin(AuthenticationFlowContext context, IdentityProviderModel idp) {
         String providerAlias = idp.getAlias();
 
         var keycloakSession = context.getSession();
-        var identityProvider = getIdentityProviderFactory(keycloakSession, idp).create(keycloakSession, idp);
+        IdentityProviderFactory factory = (IdentityProviderFactory) keycloakSession
+                .getKeycloakSessionFactory()
+                .getProviderFactory(IdentityProvider.class, idp.getProviderId());
+        var identityProvider = factory.create(keycloakSession, idp);
         var authenticationRequest = createAuthenticationRequest(context, providerAlias);
         var response = identityProvider.performLogin(authenticationRequest);
         context.forceChallenge(response);

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 3 — Warm Human</title>
+<!--
+  ============================================================
+  DIRECTION 3: "WARM HUMAN"  (primary mode shown: LIGHT/WARM)
+  Palette (HEX):
+    Page background     #FDF8F3  (warm off-white)
+    Surface             #FFFFFF
+    Ink / text          #2B2420  (warm near-black)
+    Muted text          #8C8079
+    Border / hairline   #ECE3DA
+    Accent amber        #F59E0B
+    Accent amber hover  #D97706
+    Accent coral (alt)  #FB7185
+    Success             #15803D
+    Error               #E11D48  error-bg #FFF1F2
+  Light/Dark TOKEN INTENT:
+    Warm-neutral ramp as semantic tokens:
+      --bg, --surface, --text, --text-muted, --border,
+      --accent (amber), --accent-fg, --danger.
+    DARK flips to warm-dark: bg #1A1614, surface #241F1C,
+      text #F2EAE2, border #3A322D; accent amber lifts to #FBBF24.
+    Per-tenant theming later: --accent + --accent-fg are the brand hooks;
+      warm neutrals + large radii stay constant for the friendly feel.
+  ============================================================
+-->
+<style>
+  :root{
+    --bg:#FDF8F3; --surface:#FFFFFF; --ink:#2B2420; --muted:#8C8079;
+    --border:#ECE3DA; --accent:#F59E0B; --accent-hover:#D97706; --coral:#FB7185;
+    --danger:#E11D48; --danger-bg:#FFF1F2; --success:#15803D;
+    --r:18px; --r-pill:999px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px;}
+  .rationale{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+    padding:22px 26px;margin-bottom:36px;box-shadow:0 6px 20px -14px rgba(43,36,32,.25);}
+  .rationale h1{font-size:18px;margin:0 0 8px;}
+  .rationale p{margin:0;color:var(--muted);font-size:14px;max-width:880px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+  .label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;margin:0 0 12px;}
+
+  .browser{border:1px solid var(--border);border-radius:24px;overflow:hidden;
+    box-shadow:0 20px 50px -20px rgba(43,36,32,.28);background:var(--surface);}
+  .chrome{display:flex;align-items:center;gap:8px;padding:12px 15px;background:#FBF4EC;
+    border-bottom:1px solid var(--border);}
+  .dot{width:11px;height:11px;border-radius:50%;}
+  .dot:nth-child(1){background:#FB7185;}.dot:nth-child(2){background:#FBBF24;}.dot:nth-child(3){background:#34D399;}
+  .urlbar{flex:1;margin-left:10px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-pill);font-size:12px;color:var(--muted);padding:6px 14px;}
+  .viewport{padding:46px 40px 50px;min-height:420px;}
+
+  .auth{max-width:380px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:26px;justify-content:center;}
+  .brand .mark{width:38px;height:38px;border-radius:50%;
+    background:linear-gradient(135deg,#FBBF24,#FB7185);}
+  .brand .name{font-weight:700;font-size:16px;}
+  h2.title{font-size:25px;margin:0 0 7px;text-align:center;letter-spacing:-.01em;}
+  p.sub{color:var(--muted);font-size:14.5px;margin:0 0 28px;text-align:center;}
+  label.fl{display:block;font-size:13px;font-weight:600;margin:0 0 8px;}
+  .field{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:14px;
+    padding:0 16px;height:50px;background:var(--surface);transition:border-color .15s,box-shadow .15s;}
+  .field.focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(245,158,11,.16);}
+  .field.err{border-color:var(--danger);box-shadow:0 0 0 4px rgba(225,29,72,.12);}
+  .field input{border:0;outline:0;flex:1;font-size:15px;color:var(--ink);background:transparent;}
+  .err-msg{display:flex;align-items:center;gap:7px;color:var(--danger);font-size:13px;margin-top:9px;}
+  .err-msg .x{width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;
+    font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn{width:100%;height:50px;border:0;border-radius:var(--r-pill);font-size:15px;font-weight:700;
+    cursor:pointer;margin-top:20px;}
+  .btn.primary{background:var(--accent);color:#3B2A06;}
+  .btn.primary:hover{background:var(--accent-hover);color:#fff;}
+  .divider{display:flex;align-items:center;gap:13px;color:var(--muted);font-size:13px;margin:22px 0;}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--border);}
+  .btn.ghost{background:var(--surface);border:1.5px solid var(--border);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:11px;margin-top:11px;}
+  .btn.ghost:hover{background:#FDF8F3;}
+  .g{width:18px;height:18px;border-radius:50%;
+    background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0 100%);}
+  .passkey{margin-top:18px;text-align:center;font-size:13px;color:var(--muted);}
+  .passkey a{color:var(--accent-hover);text-decoration:none;font-weight:700;}
+  .foot{margin-top:26px;text-align:center;font-size:12.5px;color:var(--muted);}
+
+  .search{display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:var(--r-pill);
+    padding:0 16px;height:48px;margin-bottom:18px;background:var(--surface);}
+  .search input{border:0;outline:0;flex:1;font-size:14px;background:transparent;color:var(--ink);}
+  .ws{display:flex;align-items:center;gap:14px;border:1.5px solid var(--border);border-radius:16px;
+    padding:14px 16px;margin-bottom:11px;cursor:pointer;background:var(--surface);transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .ws:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 24px -14px rgba(245,158,11,.5);}
+  .ws .logo{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;
+    justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0;}
+  .ws .meta{flex:1;}
+  .ws .wn{font-weight:700;font-size:15px;}
+  .ws .wr{font-size:13px;color:var(--muted);margin-top:1px;}
+  .ws .sel{font-size:13px;font-weight:700;color:var(--accent-hover);
+    background:#FEF3E2;padding:7px 14px;border-radius:var(--r-pill);}
+  .pick-title{font-size:23px;margin:0 0 5px;letter-spacing:-.01em;}
+  .pick-sub{color:var(--muted);font-size:14px;margin:0 0 22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rationale">
+    <h1>Direction 3 — Warm Human</h1>
+    <p>A softer, approachable register that de-stresses the auth moment: warm off-white canvas, fully rounded pill buttons and large radii, a friendly amber-to-coral accent, and a slightly heavier, welcoming type weight. Motion is implied to be gentle and lifting (cards rise on hover) rather than mechanical. Brand color lives in two tokens so a tenant can warm or cool the accent without losing the rounded, human shape language.</p>
+  </div>
+
+  <div class="grid">
+    <!-- HERO -->
+    <div>
+      <p class="label">Hero — Email-first login (inline error)</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">workspace.app/login</span>
+        </div>
+        <div class="viewport">
+          <div class="auth">
+            <div class="brand"><span class="mark"></span><span class="name">Workspace</span></div>
+            <h2 class="title">Welcome back</h2>
+            <p class="sub">Pop in your work email and we'll take it from there.</p>
+            <label class="fl">Work email</label>
+            <div class="field err"><input value="sam@brightside.io" /></div>
+            <div class="err-msg"><span class="x">!</span> We couldn't find an account for that email.</div>
+            <button class="btn primary">Continue</button>
+            <div class="divider">or</div>
+            <button class="btn ghost"><span class="g"></span> Continue with Google</button>
+            <div class="passkey">Prefer no password? <a href="#">Use a passkey</a></div>
+            <p class="foot">Your sign-in is private and encrypted. Always.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECONDARY -->
+    <div>
+      <p class="label">Secondary — Workspace picker</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">workspace.app/select</span>
+        </div>
+        <div class="viewport">
+          <div class="auth" style="max-width:420px;">
+            <h2 class="pick-title">Which workspace today?</h2>
+            <p class="pick-sub">Welcome back, Sam. Pick where you'd like to go.</p>
+            <div class="search"><span style="color:var(--muted);">&#9906;</span><input placeholder="Search your workspaces" /></div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#FBBF24,#FB7185);">BS</span>
+              <span class="meta"><div class="wn">Brightside</div><div class="wr">Owner</div></span>
+              <span class="sel">Open</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#34D399,#10B981);">GH</span>
+              <span class="meta"><div class="wn">Greenhouse Co</div><div class="wr">Member</div></span>
+              <span class="sel">Open</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#818CF8,#6366F1);">SD</span>
+              <span class="meta"><div class="wn">Sunday Design</div><div class="wr">Editor</div></span>
+              <span class="sel">Open</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

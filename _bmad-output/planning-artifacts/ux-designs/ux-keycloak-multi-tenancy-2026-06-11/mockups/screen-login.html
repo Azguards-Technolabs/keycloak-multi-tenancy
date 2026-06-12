@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!--
+  SCREEN: Login to Agent Account — primary entry point (Priya, returning agent; Sam, admin).
+  Username + Password auth (NOT email, NO social). Passkey affordance above password.
+  Shows default state plus an inline credential-mismatch error variant below.
+
+  WHATATALK TEAL PALETTE
+  LIGHT: bg #E6F2EE / surface #FFFFFF / ink #0F172A / muted #64748B / border #E2E8F0
+         border-strong #94A3B8 / primary #0F766E / primary-hover #115E54 / on-primary #FFFFFF
+         danger #DC2626 / danger-text #B91C1C / danger-bg #FEF2F2 / success #16A34A
+  DARK : bg #0B1A17 / surface #11221E / ink #E6EDEB / muted #94A3B8 / border #1F3A34
+         primary #0F766E / focus-ring #2DD4BF
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhataTalk — Login to Agent Account</title>
+<style>
+  :root{
+    --bg:#E6F2EE; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B;
+    --border:#E2E8F0; --border-strong:#94A3B8; --primary:#0F766E; --primary-hover:#115E54;
+    --on-primary:#FFFFFF; --danger:#DC2626; --danger-text:#B91C1C; --danger-bg:#FEF2F2;
+    --success:#16A34A; --focus-ring:#2DD4BF;
+  }
+  .dark{
+    --bg:#0B1A17; --surface:#11221E; --ink:#E6EDEB; --muted:#94A3B8;
+    --border:#1F3A34; --border-strong:#2A4A43; --primary:#0F766E; --primary-hover:#0c5f58;
+    --on-primary:#FFFFFF; --danger:#F87171; --danger-text:#FCA5A5; --danger-bg:#2A1517;
+    --success:#34D399; --focus-ring:#2DD4BF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); display:flex; align-items:center; justify-content:center; padding:40px 16px;
+  }
+  /* caption strip */
+  .caption{position:fixed;top:0;left:0;right:0;background:#0F172A;color:#CBD5E1;font-size:12px;
+    padding:8px 14px;text-align:center;letter-spacing:.2px;}
+  .wrap{width:100%;max-width:400px;}
+
+  /* wordmark */
+  .brand{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:22px;}
+  .mark{width:30px;height:18px;position:relative;}
+  .mark::before,.mark::after{content:"";position:absolute;top:0;width:18px;height:18px;
+    border:4px solid var(--primary);border-radius:50%;}
+  .mark::before{left:0;} .mark::after{right:0;}
+  .wordmark{font-size:20px;font-weight:700;letter-spacing:-.3px;}
+  .wordmark .t{color:var(--primary);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:30px 28px 26px;box-shadow:0 10px 30px rgba(15,23,42,.06);
+  }
+  .title{font-size:24px;font-weight:600;margin:0 0 4px;}
+  .subtitle{font-size:14px;color:var(--muted);margin:0 0 22px;}
+
+  .field{margin-bottom:16px;}
+  label{display:block;font-size:14px;font-weight:500;margin-bottom:7px;}
+  .input{position:relative;}
+  input[type=text],input[type=password]{
+    width:100%;height:46px;border:1px solid var(--border-strong);border-radius:10px;
+    background:var(--surface);color:var(--ink);font-size:15px;padding:0 14px;
+  }
+  input::placeholder{color:var(--muted);}
+  input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,212,191,.35);}
+  .has-eye input{padding-right:44px;}
+  .eye{position:absolute;right:6px;top:6px;width:34px;height:34px;border:0;background:transparent;
+    cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:8px;}
+  .eye svg{width:20px;height:20px;}
+
+  /* passkey affordance row */
+  .passkey{display:flex;align-items:center;gap:10px;width:100%;height:42px;padding:0 12px;
+    border:1px dashed var(--border-strong);border-radius:10px;background:transparent;color:var(--ink);
+    font-size:14px;font-weight:500;cursor:pointer;margin-bottom:16px;}
+  .passkey:hover{border-color:var(--primary);color:var(--primary);}
+  .passkey svg{width:18px;height:18px;color:var(--primary);}
+  .passkey .hint{margin-left:auto;color:var(--muted);font-size:12px;font-weight:400;}
+
+  /* error variant */
+  .err{display:flex;gap:9px;align-items:flex-start;background:var(--danger-bg);
+    border:1px solid var(--danger);border-radius:10px;padding:10px 12px;margin:-2px 0 16px;
+    color:var(--danger-text);font-size:13px;line-height:1.35;}
+  .err svg{width:16px;height:16px;flex:0 0 16px;margin-top:1px;}
+  .input.invalid input{border-color:var(--danger);}
+
+  .btn{width:100%;height:46px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;}
+  .btn-primary{background:var(--primary);color:var(--on-primary);border:1px solid var(--primary);}
+  .btn-primary:hover{background:var(--primary-hover);}
+  .btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary);margin-top:10px;}
+  .btn-outline:hover{background:rgba(15,118,110,.06);}
+
+  .forgot{text-align:center;margin-top:16px;}
+  .forgot a{color:var(--primary);font-size:14px;font-weight:500;text-decoration:none;}
+  .forgot a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="caption">screen-login · Login to Agent Account — default state + inline credential error variant (Priya / Sam journey)</div>
+<div class="wrap">
+  <div class="brand">
+    <span class="mark"></span>
+    <span class="wordmark">Whata<span class="t">Talk</span></span>
+  </div>
+
+  <div class="card">
+    <h1 class="title">Login to Agent Account</h1>
+    <p class="subtitle">Sign in to continue to your accounts.</p>
+
+    <div class="field">
+      <label for="u">Username</label>
+      <div class="input invalid"><input id="u" type="text" placeholder="your.username" value="priya.k"></div>
+    </div>
+
+    <!-- passkey upgrade affordance, sits above password -->
+    <button class="passkey" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      Use your passkey
+      <span class="hint">faster &amp; passwordless</span>
+    </button>
+
+    <div class="field">
+      <label for="p">Password</label>
+      <div class="input has-eye invalid">
+        <input id="p" type="password" placeholder="••••••••" value="wrongpass">
+        <button class="eye" type="button" aria-label="Show password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- inline error variant -->
+    <div class="err">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>
+      That username or password doesn’t match.
+    </div>
+
+    <button class="btn btn-primary" type="button">Login</button>
+    <button class="btn btn-outline" type="button">Create New Business</button>
+
+    <div class="forgot"><a href="#">Forgot Password</a></div>
+  </div>
+</div>
+</body>
+</html>

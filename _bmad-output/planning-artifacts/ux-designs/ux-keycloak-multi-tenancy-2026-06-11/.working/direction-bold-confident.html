@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 4 — Bold Confident</title>
+<!--
+  ============================================================
+  DIRECTION 4: "BOLD CONFIDENT"  (primary mode shown: LIGHT + branded panel)
+  Palette (HEX):
+    Brand violet        #6D28D9  (panel + primary action)
+    Brand violet deep   #4C1D95  (panel gradient base)
+    Brand violet bright #8B5CF6  (panel gradient top, focus)
+    Panel text on brand #FFFFFF
+    Ink / text          #18122B
+    Muted text          #6B6480
+    Border / hairline   #E7E3F0
+    Surface             #FFFFFF
+    Page background     #F6F4FB
+    Error               #DC2626  error-bg #FEF2F2
+  Light/Dark TOKEN INTENT:
+    Brand-led ramp via semantic tokens:
+      --brand, --brand-deep, --brand-bright, --brand-fg,
+      --bg, --surface, --text, --text-muted, --border, --danger.
+    DARK flips form side: bg #100B1C, surface #1A1330, text #ECE7F7,
+      border #2C2347; the branded panel stays vivid in both modes.
+    Per-tenant theming later: the entire branded panel is driven by
+      --brand/--brand-deep/--brand-bright — a tenant swaps three tokens
+      to fully re-skin the split-screen without touching the form side.
+  ============================================================
+-->
+<style>
+  :root{
+    --brand:#6D28D9; --brand-deep:#4C1D95; --brand-bright:#8B5CF6; --brand-fg:#FFFFFF;
+    --bg:#F6F4FB; --surface:#FFFFFF; --ink:#18122B; --muted:#6B6480;
+    --border:#E7E3F0; --danger:#DC2626; --danger-bg:#FEF2F2; --r:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px;}
+  .rationale{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+    padding:22px 26px;margin-bottom:36px;}
+  .rationale h1{font-size:19px;margin:0 0 8px;font-weight:800;letter-spacing:-.02em;}
+  .rationale p{margin:0;color:var(--muted);font-size:14px;max-width:880px;}
+  .label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;margin:0 0 12px;}
+  .stack{display:flex;flex-direction:column;gap:34px;}
+
+  .browser{border:1px solid var(--border);border-radius:18px;overflow:hidden;
+    box-shadow:0 24px 60px -24px rgba(76,29,149,.4);background:var(--surface);}
+  .chrome{display:flex;align-items:center;gap:8px;padding:12px 15px;background:#EFEBF8;
+    border-bottom:1px solid var(--border);}
+  .dot{width:11px;height:11px;border-radius:50%;background:#C9C1E0;}
+  .urlbar{flex:1;margin-left:10px;background:var(--surface);border:1px solid var(--border);
+    border-radius:7px;font-size:12px;color:var(--muted);padding:6px 13px;}
+
+  /* SPLIT layout */
+  .split{display:grid;grid-template-columns:1fr 1fr;min-height:480px;}
+  .panel{position:relative;color:var(--brand-fg);padding:48px 44px;overflow:hidden;
+    background:linear-gradient(155deg,var(--brand-bright),var(--brand) 45%,var(--brand-deep));}
+  .panel:after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;
+    right:-120px;top:-120px;background:rgba(255,255,255,.10);}
+  .panel:before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;
+    left:-80px;bottom:-90px;background:rgba(255,255,255,.07);}
+  .panel .pbrand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;position:relative;z-index:1;}
+  .panel .pbrand .m{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.4);}
+  .panel h3{font-size:34px;line-height:1.12;margin:60px 0 16px;font-weight:800;
+    letter-spacing:-.025em;position:relative;z-index:1;max-width:340px;}
+  .panel p{font-size:15px;opacity:.88;max-width:320px;position:relative;z-index:1;margin:0;}
+  .panel .trust{position:absolute;bottom:44px;left:44px;font-size:12.5px;opacity:.85;
+    display:flex;gap:18px;z-index:1;font-weight:600;}
+
+  .formside{padding:48px 44px;display:flex;flex-direction:column;justify-content:center;background:var(--surface);}
+  .auth{max-width:340px;margin:0 auto;width:100%;}
+  h2.title{font-size:27px;margin:0 0 7px;font-weight:800;letter-spacing:-.02em;}
+  p.sub{color:var(--muted);font-size:14.5px;margin:0 0 28px;}
+  label.fl{display:block;font-size:13px;font-weight:600;margin:0 0 8px;}
+  .field{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:11px;
+    padding:0 15px;height:50px;background:var(--surface);transition:border-color .15s,box-shadow .15s;}
+  .field.focus{border-color:var(--brand-bright);box-shadow:0 0 0 4px rgba(139,92,246,.18);}
+  .field.err{border-color:var(--danger);box-shadow:0 0 0 4px rgba(220,38,38,.12);}
+  .field input{border:0;outline:0;flex:1;font-size:15px;color:var(--ink);background:transparent;}
+  .err-msg{display:flex;align-items:center;gap:7px;color:var(--danger);font-size:13px;margin-top:9px;}
+  .err-msg .x{width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;
+    font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn{width:100%;height:50px;border:0;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;}
+  .btn.primary{background:var(--brand);color:var(--brand-fg);
+    box-shadow:0 10px 24px -10px rgba(109,40,217,.6);}
+  .btn.primary:hover{background:var(--brand-deep);}
+  .divider{display:flex;align-items:center;gap:13px;color:var(--muted);font-size:13px;margin:22px 0;}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--border);}
+  .btn.ghost{background:var(--surface);border:1.5px solid var(--border);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:11px;margin-top:11px;}
+  .btn.ghost:hover{background:var(--bg);}
+  .g{width:18px;height:18px;border-radius:50%;
+    background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0 100%);}
+  .passkey{margin-top:18px;text-align:center;font-size:13px;color:var(--muted);}
+  .passkey a{color:var(--brand);text-decoration:none;font-weight:700;}
+
+  /* tenant picker */
+  .viewport{padding:48px 44px;min-height:420px;background:var(--surface);}
+  .auth-wide{max-width:440px;margin:0 auto;}
+  .pick-title{font-size:25px;margin:0 0 5px;font-weight:800;letter-spacing:-.02em;}
+  .pick-sub{color:var(--muted);font-size:14px;margin:0 0 22px;}
+  .search{display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:11px;
+    padding:0 15px;height:48px;margin-bottom:18px;background:var(--surface);}
+  .search input{border:0;outline:0;flex:1;font-size:14px;background:transparent;color:var(--ink);}
+  .ws{display:flex;align-items:center;gap:14px;border:1.5px solid var(--border);border-radius:13px;
+    padding:15px 16px;margin-bottom:11px;cursor:pointer;background:var(--surface);transition:border-color .12s,box-shadow .12s;}
+  .ws:hover{border-color:var(--brand-bright);box-shadow:0 8px 22px -12px rgba(109,40,217,.5);}
+  .ws .logo{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;font-weight:800;color:#fff;font-size:16px;flex-shrink:0;}
+  .ws .meta{flex:1;}
+  .ws .wn{font-weight:700;font-size:15px;}
+  .ws .wr{font-size:13px;color:var(--muted);margin-top:1px;}
+  .ws .sel{font-size:13px;font-weight:700;color:#fff;background:var(--brand);
+    padding:9px 16px;border-radius:9px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rationale">
+    <h1>Direction 4 — Bold Confident</h1>
+    <p>A confident, brand-forward split screen: a vivid violet gradient panel carries a strong promise while the form side stays clean and focused. Larger, heavier type and a weighty primary button project authority and momentum; the implied motion is purposeful and assured. The entire branded panel is driven by three brand tokens, so a tenant can fully re-skin the marketing side without touching the form.</p>
+  </div>
+
+  <div class="stack">
+    <!-- HERO: split-screen email-first with error -->
+    <div>
+      <p class="label">Hero — Split-screen email-first login (inline error)</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">https://id.workspace.app/login</span>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <div class="pbrand"><span class="m"></span> Workspace ID</div>
+            <h3>One secure sign-in for every workspace you run.</h3>
+            <p>Email, passkeys, and SSO — all behind enterprise-grade security your team can trust.</p>
+            <div class="trust"><span>&#10003; SOC 2 Type II</span><span>&#10003; SSO &amp; SCIM</span><span>&#10003; Passkeys</span></div>
+          </div>
+          <div class="formside">
+            <div class="auth">
+              <h2 class="title">Sign in</h2>
+              <p class="sub">Enter your work email to continue.</p>
+              <label class="fl">Work email</label>
+              <div class="field err"><input value="jordan@vertex.co" /></div>
+              <div class="err-msg"><span class="x">!</span> We couldn't find an account for that email.</div>
+              <button class="btn primary">Continue</button>
+              <div class="divider">or</div>
+              <button class="btn ghost"><span class="g"></span> Continue with Google</button>
+              <div class="passkey">Set up on this device? <a href="#">Sign in with passkey</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECONDARY -->
+    <div>
+      <p class="label">Secondary — Workspace picker</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">https://id.workspace.app/select</span>
+        </div>
+        <div class="viewport">
+          <div class="auth-wide">
+            <h2 class="pick-title">Pick your workspace</h2>
+            <p class="pick-sub">You belong to 3 workspaces as jordan@vertex.co.</p>
+            <div class="search"><span style="color:var(--muted);">&#9906;</span><input placeholder="Search workspaces" /></div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">VX</span>
+              <span class="meta"><div class="wn">Vertex Inc</div><div class="wr">Administrator</div></span>
+              <span class="sel">Select</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#F472B6,#DB2777);">QS</span>
+              <span class="meta"><div class="wn">Quartz Studio</div><div class="wr">Member</div></span>
+              <span class="sel">Select</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:linear-gradient(135deg,#38BDF8,#0284C7);">HM</span>
+              <span class="meta"><div class="wn">Harbor Media</div><div class="wr">Billing manager</div></span>
+              <span class="sel">Select</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

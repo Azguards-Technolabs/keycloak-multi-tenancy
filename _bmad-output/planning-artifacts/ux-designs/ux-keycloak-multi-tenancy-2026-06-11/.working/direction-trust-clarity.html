@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 1 — Trust &amp; Clarity</title>
+<!--
+  ============================================================
+  DIRECTION 1: "TRUST & CLARITY"
+  Palette (HEX):
+    Primary blue        #2563EB  (action, focus rings)
+    Primary blue hover  #1D4ED8
+    Ink / text          #0F172A
+    Muted text          #64748B
+    Border / hairline   #E2E8F0
+    Surface             #FFFFFF
+    Page background     #F8FAFC
+    Success green       #16A34A
+    Error red           #DC2626  error-bg #FEF2F2
+  Light/Dark TOKEN INTENT:
+    Everything maps to semantic tokens, not raw hex:
+      --color-bg, --color-surface, --color-text, --color-text-muted,
+      --color-border, --color-primary, --color-primary-fg, --color-danger.
+    Dark mode flips: bg #0B1220, surface #111A2E, text #E6EDF7,
+      border #1F2A44, primary stays #3B82F6 (lifted for contrast).
+    Per-tenant theming later: --color-primary + --color-primary-fg are
+      the only brand-overridable tokens; structure/spacing stay fixed.
+  ============================================================
+-->
+<style>
+  :root{
+    --bg:#F8FAFC; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B;
+    --border:#E2E8F0; --primary:#2563EB; --primary-hover:#1D4ED8;
+    --danger:#DC2626; --danger-bg:#FEF2F2; --success:#16A34A;
+    --radius:12px; --radius-lg:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px;}
+  .rationale{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px 24px;margin-bottom:36px;}
+  .rationale h1{font-size:18px;margin:0 0 8px;letter-spacing:-.01em;}
+  .rationale p{margin:0;color:var(--muted);font-size:14px;max-width:880px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+  .label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;margin:0 0 12px;}
+
+  /* Browser frame */
+  .browser{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:0 12px 40px -12px rgba(15,23,42,.18);background:var(--surface);}
+  .chrome{display:flex;align-items:center;gap:8px;padding:11px 14px;background:#F1F5F9;
+    border-bottom:1px solid var(--border);}
+  .dot{width:11px;height:11px;border-radius:50%;background:#CBD5E1;}
+  .urlbar{flex:1;margin-left:10px;background:var(--surface);border:1px solid var(--border);
+    border-radius:7px;font-size:12px;color:var(--muted);padding:5px 12px;}
+  .viewport{padding:48px 40px 52px;min-height:420px;background:var(--surface);}
+
+  /* Auth card */
+  .auth{max-width:380px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:30px;justify-content:center;}
+  .brand .mark{width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);}
+  .brand .name{font-weight:600;font-size:16px;letter-spacing:-.01em;}
+  h2.title{font-size:23px;letter-spacing:-.02em;margin:0 0 6px;text-align:center;}
+  p.sub{color:var(--muted);font-size:14px;margin:0 0 26px;text-align:center;}
+  label.fl{display:block;font-size:13px;font-weight:500;margin:0 0 7px;}
+  .field{display:flex;align-items:center;border:1px solid var(--border);border-radius:10px;
+    padding:0 14px;height:46px;background:var(--surface);transition:border-color .15s;}
+  .field.focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15);}
+  .field.err{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.12);}
+  .field input{border:0;outline:0;flex:1;font-size:15px;color:var(--ink);background:transparent;}
+  .err-msg{display:flex;align-items:center;gap:6px;color:var(--danger);font-size:13px;margin-top:8px;}
+  .err-msg .x{width:15px;height:15px;border-radius:50%;background:var(--danger);color:#fff;
+    font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn{width:100%;height:46px;border:0;border-radius:10px;font-size:15px;font-weight:600;
+    cursor:pointer;margin-top:18px;}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.primary:hover{background:var(--primary-hover);}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:22px 0;}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--border);}
+  .btn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;}
+  .btn.ghost:hover{background:#F8FAFC;}
+  .g{width:18px;height:18px;border-radius:50%;
+    background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0 100%);}
+  .passkey{margin-top:18px;text-align:center;font-size:13px;color:var(--muted);}
+  .passkey a{color:var(--primary);text-decoration:none;font-weight:500;}
+  .foot{margin-top:26px;text-align:center;font-size:12px;color:var(--muted);}
+
+  /* Tenant picker */
+  .search{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:10px;
+    padding:0 13px;height:44px;margin-bottom:18px;}
+  .search input{border:0;outline:0;flex:1;font-size:14px;background:transparent;color:var(--ink);}
+  .ws{display:flex;align-items:center;gap:14px;border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+  .ws:hover{border-color:var(--primary);box-shadow:0 4px 16px -8px rgba(37,99,235,.4);}
+  .ws .logo{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-weight:600;color:#fff;font-size:15px;flex-shrink:0;}
+  .ws .meta{flex:1;}
+  .ws .wn{font-weight:600;font-size:15px;}
+  .ws .wr{font-size:13px;color:var(--muted);margin-top:1px;}
+  .ws .sel{font-size:13px;font-weight:600;color:var(--primary);}
+  .pick-title{font-size:21px;letter-spacing:-.02em;margin:0 0 4px;}
+  .pick-sub{color:var(--muted);font-size:14px;margin:0 0 22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rationale">
+    <h1>Direction 1 — Trust &amp; Clarity</h1>
+    <p>A calm, spacious, institutional register in the Stripe/WorkOS family: generous whitespace, a single confident blue, medium type weights, and soft hairline borders. Motion is implied to be quiet and minimal (gentle focus glows, no bounce) so the authentication moment reads as dependable rather than playful. Everything routes through semantic tokens, so a tenant can later override only the primary brand color without disturbing the layout.</p>
+  </div>
+
+  <div class="grid">
+    <!-- HERO: email-first login with inline error state -->
+    <div>
+      <p class="label">Hero — Email-first login (inline error state)</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">https://auth.workspace.app/login</span>
+        </div>
+        <div class="viewport">
+          <div class="auth">
+            <div class="brand"><span class="mark"></span><span class="name">Workspace ID</span></div>
+            <h2 class="title">Sign in to your workspace</h2>
+            <p class="sub">Enter your work email to continue securely.</p>
+            <label class="fl" for="e1">Work email</label>
+            <div class="field err"><input id="e1" value="ana@acme-corp.com" /></div>
+            <div class="err-msg"><span class="x">!</span> We couldn't find an account for that email.</div>
+            <button class="btn primary">Continue</button>
+            <div class="divider">OR</div>
+            <button class="btn ghost"><span class="g"></span> Continue with Google</button>
+            <div class="passkey">Have a passkey? <a href="#">Sign in with passkey</a></div>
+            <p class="foot">Protected by enterprise-grade encryption.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECONDARY: tenant picker -->
+    <div>
+      <p class="label">Secondary — Workspace picker</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">https://auth.workspace.app/select</span>
+        </div>
+        <div class="viewport">
+          <div class="auth" style="max-width:420px;">
+            <h2 class="pick-title">Choose a workspace</h2>
+            <p class="pick-sub">You're a member of these workspaces, ana@acme-corp.com.</p>
+            <div class="search">
+              <span style="color:var(--muted);">&#9906;</span>
+              <input placeholder="Search workspaces" />
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:#2563EB;">AC</span>
+              <span class="meta"><div class="wn">Acme Corp</div><div class="wr">Administrator</div></span>
+              <span class="sel">Select &rsaquo;</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:#16A34A;">NW</span>
+              <span class="meta"><div class="wn">Northwind Trading</div><div class="wr">Member</div></span>
+              <span class="sel">Select &rsaquo;</span>
+            </div>
+            <div class="ws">
+              <span class="logo" style="background:#9333EA;">BL</span>
+              <span class="meta"><div class="wn">Blue Lake Labs</div><div class="wr">Billing manager</div></span>
+              <span class="sel">Select &rsaquo;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

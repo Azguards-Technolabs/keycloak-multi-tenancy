@@ -1,0 +1,38 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {"started": "2026-06-11T12:17:35Z", "last_updated": "2026-06-11T12:30:00Z", "completed": "2026-06-11T12:30:00Z"},
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "scope_note": "Focused on login/onboarding flows for UX redesign grounding (per user goal).",
+  "project_root": "/home/asif/WorkSpace/azguards-whatsapp/keycloak-multi-tenancy",
+  "project_knowledge": "/home/asif/WorkSpace/azguards-whatsapp/keycloak-multi-tenancy/docs",
+  "repository_type": "monolith",
+  "project_types": [{"part_id": "root", "project_type_id": "extension", "display_name": "Keycloak Extension (Java SPI)"}],
+  "completed_steps": [
+    {"step": "step_1", "status": "completed", "timestamp": "2026-06-11T12:18:00Z", "summary": "Classified as monolith, single part, Keycloak extension (Java SPI), KC 26.0.7"},
+    {"step": "step_2", "status": "completed", "timestamp": "2026-06-11T12:18:30Z", "summary": "Existing docs: README.md, openapi.yaml/json"},
+    {"step": "step_3", "status": "completed", "timestamp": "2026-06-11T12:19:00Z", "summary": "Tech stack: Java/Keycloak SPI, JPA, FreeMarker, Zipkin, Maven"},
+    {"step": "step_4", "status": "completed", "timestamp": "2026-06-11T12:25:00Z", "summary": "Read required actions, authenticators, REST resources, OIDC mappers, FTL templates, messages, SPI registrations"},
+    {"step": "step_5", "status": "completed", "timestamp": "2026-06-11T12:27:00Z", "summary": "Source tree documented (flow-focused)"},
+    {"step": "step_8", "status": "completed", "timestamp": "2026-06-11T12:28:00Z", "summary": "architecture.md written"},
+    {"step": "step_9", "status": "completed", "timestamp": "2026-06-11T12:29:00Z", "summary": "auth-flows.md, api-contracts.md, project-overview.md, source-tree-analysis.md written"},
+    {"step": "step_10", "status": "completed", "timestamp": "2026-06-11T12:30:00Z", "summary": "index.md generated"},
+    {"step": "step_12", "status": "completed", "timestamp": "2026-06-11T12:30:00Z", "summary": "Workflow complete"}
+  ],
+  "current_step": "completed",
+  "findings": {
+    "project_classification": "Keycloak extension (Java SPI), single-realm multi-tenancy, KC 26.0.7",
+    "flow_components": {
+      "required_actions": ["review-tenant-invitations", "create-tenant", "select-active-tenant"],
+      "authenticators": ["login-with-sso", "IdpTenantMembershipsCreating"],
+      "oidc_mappers": ["oidc-active-tenant-mapper", "oidc-all-tenants-mapper", "HardcodedTenantMapper", "TenantAttributeMapper"],
+      "templates": ["create-tenant.ftl", "select-tenant.ftl", "review-invitations.ftl", "login-with-sso.ftl"],
+      "user_rest": ["PUT …/switch", "GET …/user-tenants"]
+    }
+  },
+  "outputs_generated": [
+    "project-scan-report.json", "index.md", "project-overview.md", "architecture.md",
+    "auth-flows.md", "api-contracts.md", "source-tree-analysis.md"
+  ],
+  "resume_instructions": "Workflow complete."
+}

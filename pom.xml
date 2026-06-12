@@ -4,7 +4,7 @@
 
     <groupId>dev.sultanov</groupId>
     <artifactId>keycloak-multi-tenancy</artifactId>
-    <version>26.0.16</version>
+    <version>26.4.1</version>
     <packaging>jar</packaging>
 
     <name>Keycloak Multi-Tenancy</name>
@@ -17,8 +17,8 @@
     </licenses>
 
     <properties>
-        <keycloak.version>26.0.7</keycloak.version>
-        <keycloak.client.version>26.0.7</keycloak.client.version>
+        <keycloak.version>26.2.5</keycloak.version>
+        <keycloak.client.version>26.0.9</keycloak.client.version>
     </properties>
 
     <dependencies>
@@ -103,7 +103,7 @@
         <dependency>
             <groupId>com.github.dasniko</groupId>
             <artifactId>testcontainers-keycloak</artifactId>
-            <version>3.5.1</version>
+            <version>3.7.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -160,6 +160,13 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.36</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>

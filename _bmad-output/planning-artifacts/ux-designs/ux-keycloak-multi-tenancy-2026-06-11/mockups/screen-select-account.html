@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!--
+  SCREEN: Select Account — post-login account chooser (Priya, agent on many accounts).
+  Enhances the live "Select Account" screen: search field + clickable account rows with
+  initials avatars, roles, and the last-used account pinned at top with a primary border.
+
+  WHATATALK TEAL PALETTE
+  LIGHT: bg #E6F2EE / surface #FFFFFF / ink #0F172A / muted #64748B / border #E2E8F0
+         border-strong #94A3B8 / primary #0F766E / primary-hover #115E54 / on-primary #FFFFFF
+         danger #DC2626 / success #16A34A
+  DARK : bg #0B1A17 / surface #11221E / ink #E6EDEB / muted #94A3B8 / border #1F3A34
+         primary #0F766E / focus-ring #2DD4BF
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhataTalk — Select Account</title>
+<style>
+  :root{
+    --bg:#E6F2EE; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B;
+    --border:#E2E8F0; --border-strong:#94A3B8; --primary:#0F766E; --primary-hover:#115E54;
+    --on-primary:#FFFFFF; --success:#16A34A; --focus-ring:#2DD4BF;
+  }
+  .dark{
+    --bg:#0B1A17; --surface:#11221E; --ink:#E6EDEB; --muted:#94A3B8;
+    --border:#1F3A34; --border-strong:#2A4A43; --primary:#0F766E; --focus-ring:#2DD4BF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:40px 16px;}
+  .caption{position:fixed;top:0;left:0;right:0;background:#0F172A;color:#CBD5E1;font-size:12px;
+    padding:8px 14px;text-align:center;letter-spacing:.2px;}
+  .wrap{width:100%;max-width:400px;}
+  .brand{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:22px;}
+  .mark{width:30px;height:18px;position:relative;}
+  .mark::before,.mark::after{content:"";position:absolute;top:0;width:18px;height:18px;
+    border:4px solid var(--primary);border-radius:50%;}
+  .mark::before{left:0;} .mark::after{right:0;}
+  .wordmark{font-size:20px;font-weight:700;letter-spacing:-.3px;}
+  .wordmark .t{color:var(--primary);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:26px 22px 22px;box-shadow:0 10px 30px rgba(15,23,42,.06);}
+  .title{font-size:24px;font-weight:600;margin:0 0 4px;}
+  .subtitle{font-size:14px;color:var(--muted);margin:0 0 18px;}
+
+  .search{position:relative;margin-bottom:16px;}
+  .search svg{position:absolute;left:13px;top:13px;width:18px;height:18px;color:var(--muted);}
+  .search input{width:100%;height:44px;border:1px solid var(--border-strong);border-radius:10px;
+    background:var(--surface);color:var(--ink);font-size:15px;padding:0 14px 0 40px;}
+  .search input::placeholder{color:var(--muted);}
+  .search input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,212,191,.35);}
+
+  .list{display:flex;flex-direction:column;gap:10px;}
+  .row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+    border:1px solid var(--border);border-radius:12px;background:var(--surface);
+    padding:12px 14px;cursor:pointer;}
+  .row:hover{border-color:var(--primary);background:rgba(15,118,110,.04);}
+  .row.pinned{border:2px solid var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,.08);}
+  .avatar{flex:0 0 42px;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;color:#fff;font-size:15px;font-weight:600;letter-spacing:.3px;}
+  .meta{min-width:0;flex:1;}
+  .name-row{display:flex;align-items:center;gap:8px;}
+  .name{font-size:18px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tag{font-size:11px;font-weight:600;color:var(--primary);background:rgba(15,118,110,.10);
+    border:1px solid rgba(15,118,110,.30);border-radius:999px;padding:2px 8px;white-space:nowrap;}
+  .roles{font-size:12px;color:var(--muted);margin-top:2px;}
+  .chev{flex:0 0 18px;color:var(--muted);}
+  .chev svg{width:18px;height:18px;}
+</style>
+</head>
+<body>
+<div class="caption">screen-select-account · Select Account — agent on many accounts, last-used pinned (Priya journey)</div>
+<div class="wrap">
+  <div class="brand">
+    <span class="mark"></span>
+    <span class="wordmark">Whata<span class="t">Talk</span></span>
+  </div>
+
+  <div class="card">
+    <h1 class="title">Select Account</h1>
+    <p class="subtitle">Choose which account to continue into.</p>
+
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input type="text" placeholder="Search accounts">
+    </div>
+
+    <div class="list">
+      <!-- pinned: last used -->
+      <button class="row pinned" type="button">
+        <span class="avatar" style="background:#0F766E;">KA</span>
+        <span class="meta">
+          <span class="name-row"><span class="name">Kitaab Alyom</span><span class="tag">Last used</span></span>
+          <span class="roles">Roles: AGENT</span>
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+      </button>
+
+      <button class="row" type="button">
+        <span class="avatar" style="background:#7C3AED;">AT</span>
+        <span class="meta">
+          <span class="name-row"><span class="name">Azguards Technolabs</span></span>
+          <span class="roles">Roles: ADMIN</span>
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+      </button>
+
+      <button class="row" type="button">
+        <span class="avatar" style="background:#0EA5E9;">WT</span>
+        <span class="meta">
+          <span class="name-row"><span class="name">WhataTalk</span></span>
+          <span class="roles">Roles: ADMIN</span>
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+      </button>
+
+      <button class="row" type="button">
+        <span class="avatar" style="background:#DC2626;">NM</span>
+        <span class="meta">
+          <span class="name-row"><span class="name">Noor Media House</span></span>
+          <span class="roles">Roles: AGENT</span>
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+      </button>
+
+      <button class="row" type="button">
+        <span class="avatar" style="background:#D97706;">SR</span>
+        <span class="meta">
+          <span class="name-row"><span class="name">Saffron Retail Group</span></span>
+          <span class="roles">Roles: AGENT</span>
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

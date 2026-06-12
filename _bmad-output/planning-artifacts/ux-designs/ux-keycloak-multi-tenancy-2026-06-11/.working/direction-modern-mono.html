@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 2 — Modern Mono</title>
+<!--
+  ============================================================
+  DIRECTION 2: "MODERN MONO"  (primary mode shown: DARK)
+  Palette (HEX):
+    Background          #08090A
+    Surface             #0F1011
+    Surface raised      #161718
+    Hairline border     #232425
+    Text high           #F4F4F5
+    Text muted          #8A8A8E
+    Accent (single)     #FFFFFF  (used sparingly: primary button fill)
+    Accent on-dark btn  #000000  (text on white button)
+    Error               #F87171  error-bg rgba(248,113,113,.10)
+  Light/Dark TOKEN INTENT:
+    Near-monochrome ramp expressed as semantic tokens:
+      --bg, --surface, --surface-2, --border, --text, --text-muted, --accent.
+    LIGHT flips the ramp: bg #FFFFFF, surface #FAFAFA, border #EAEAEA,
+      text #18181B, accent stays #18181B (button becomes near-black on white).
+    Per-tenant theming later: only --accent + its foreground are overridable;
+      the grayscale structure is brand-agnostic by design.
+  ============================================================
+-->
+<style>
+  :root{
+    --bg:#08090A; --surface:#0F1011; --surface2:#161718; --border:#232425;
+    --text:#F4F4F5; --muted:#8A8A8E; --accent:#FFFFFF; --accent-fg:#000000;
+    --err:#F87171; --r:8px;
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);
+    line-height:1.45;letter-spacing:-.01em;
+    background-image:radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:22px 22px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px;}
+  .rationale{border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;
+    margin-bottom:34px;background:var(--surface);}
+  .rationale h1{font-size:15px;margin:0 0 7px;font-weight:600;}
+  .rationale p{margin:0;color:var(--muted);font-size:13px;max-width:880px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
+  .label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.1em;margin:0 0 12px;}
+
+  .browser{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface);}
+  .chrome{display:flex;align-items:center;gap:7px;padding:10px 13px;background:#0B0C0D;
+    border-bottom:1px solid var(--border);}
+  .dot{width:10px;height:10px;border-radius:50%;border:1px solid #2A2B2C;}
+  .urlbar{flex:1;margin-left:9px;background:#0B0C0D;border:1px solid var(--border);
+    border-radius:6px;font-size:11px;color:var(--muted);padding:5px 11px;font-family:ui-monospace,monospace;}
+  .viewport{padding:46px 38px 50px;min-height:420px;}
+
+  .auth{max-width:360px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:34px;}
+  .brand .mark{width:24px;height:24px;border:1px solid var(--text);border-radius:6px;position:relative;}
+  .brand .mark:after{content:"";position:absolute;inset:6px;background:var(--text);border-radius:2px;}
+  .brand .name{font-weight:600;font-size:14px;}
+  h2.title{font-size:22px;margin:0 0 6px;font-weight:600;letter-spacing:-.03em;}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 28px;}
+  label.fl{display:block;font-size:12px;color:var(--muted);margin:0 0 7px;font-weight:500;}
+  .field{display:flex;align-items:center;border:1px solid var(--border);border-radius:6px;
+    padding:0 13px;height:42px;background:var(--surface2);transition:border-color .12s;}
+  .field.focus{border-color:#3F4042;}
+  .field.err{border-color:var(--err);}
+  .field input{border:0;outline:0;flex:1;font-size:14px;color:var(--text);background:transparent;
+    font-family:ui-monospace,monospace;}
+  .err-msg{color:var(--err);font-size:12px;margin-top:8px;display:flex;gap:6px;align-items:center;}
+  .btn{width:100%;height:42px;border:0;border-radius:6px;font-size:14px;font-weight:600;
+    cursor:pointer;margin-top:16px;letter-spacing:-.01em;}
+  .btn.primary{background:var(--accent);color:var(--accent-fg);}
+  .btn.primary:hover{background:#E4E4E7;}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11px;margin:20px 0;
+    text-transform:uppercase;letter-spacing:.1em;}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--border);}
+  .btn.ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    display:flex;align-items:center;justify-content:center;gap:9px;margin-top:9px;}
+  .btn.ghost:hover{border-color:#3F4042;}
+  .g{width:15px;height:15px;border-radius:50%;
+    background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0 100%);}
+  .passkey{margin-top:16px;font-size:12px;color:var(--muted);text-align:center;}
+  .passkey a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);}
+  .foot{margin-top:26px;font-size:11px;color:var(--muted);text-align:center;
+    font-family:ui-monospace,monospace;}
+
+  .search{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:6px;
+    padding:0 12px;height:42px;margin-bottom:16px;background:var(--surface2);}
+  .search input{border:0;outline:0;flex:1;font-size:13px;background:transparent;color:var(--text);
+    font-family:ui-monospace,monospace;}
+  .ws{display:flex;align-items:center;gap:13px;border:1px solid var(--border);border-radius:6px;
+    padding:13px 14px;margin-bottom:8px;cursor:pointer;background:var(--surface);transition:border-color .12s,background .12s;}
+  .ws:hover{border-color:#3F4042;background:var(--surface2);}
+  .ws .logo{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;
+    justify-content:center;font-weight:600;font-size:13px;flex-shrink:0;border:1px solid var(--border);
+    color:var(--text);background:var(--surface2);font-family:ui-monospace,monospace;}
+  .ws .meta{flex:1;}
+  .ws .wn{font-weight:600;font-size:14px;}
+  .ws .wr{font-size:12px;color:var(--muted);margin-top:1px;font-family:ui-monospace,monospace;}
+  .ws .sel{font-size:12px;color:var(--muted);}
+  .pick-title{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.03em;}
+  .pick-sub{color:var(--muted);font-size:13px;margin:0 0 22px;}
+  /* loading skeleton state */
+  .skel{height:62px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;
+    background:linear-gradient(90deg,var(--surface) 0%,var(--surface2) 50%,var(--surface) 100%);}
+  .skel-note{font-size:12px;color:var(--muted);text-align:center;margin-top:14px;font-family:ui-monospace,monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rationale">
+    <h1>Direction 2 — Modern Mono</h1>
+    <p>A near-monochrome, high-contrast system in the Linear/Vercel register: tight tracking, monospace accents on inputs and metadata, a single white-on-black action, and a faint dot grid. The only color is functional (error red); restraint signals technical precision. Motion is implied as instant and crisp; the tenant picker shows a quiet skeleton-loading state rather than a spinner.</p>
+  </div>
+
+  <div class="grid">
+    <!-- HERO -->
+    <div>
+      <p class="label">Hero — Email-first login (inline error)</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">auth.workspace.app/login</span>
+        </div>
+        <div class="viewport">
+          <div class="auth">
+            <div class="brand"><span class="mark"></span><span class="name">ID</span></div>
+            <h2 class="title">Sign in</h2>
+            <p class="sub">Use your work email to continue.</p>
+            <label class="fl">EMAIL</label>
+            <div class="field err"><input value="dev@acme-corp.com" /></div>
+            <div class="err-msg">&#9587; We couldn't find an account for that email.</div>
+            <button class="btn primary">Continue</button>
+            <div class="divider">or</div>
+            <button class="btn ghost"><span class="g"></span> Continue with Google</button>
+            <div class="passkey">or <a href="#">use a passkey</a></div>
+            <p class="foot">SOC 2 · SSO READY · ENCRYPTED</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECONDARY: loading state -->
+    <div>
+      <p class="label">Secondary — Workspace picker (loading state)</p>
+      <div class="browser">
+        <div class="chrome">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="urlbar">auth.workspace.app/select</span>
+        </div>
+        <div class="viewport">
+          <div class="auth" style="max-width:400px;">
+            <h2 class="pick-title">Select workspace</h2>
+            <p class="pick-sub">Signed in as dev@acme-corp.com</p>
+            <div class="search"><span style="color:var(--muted);">/</span><input placeholder="Filter workspaces" /></div>
+            <div class="ws">
+              <span class="logo">AC</span>
+              <span class="meta"><div class="wn">Acme Corp</div><div class="wr">admin</div></span>
+              <span class="sel">&rarr;</span>
+            </div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <p class="skel-note">Loading your workspaces…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

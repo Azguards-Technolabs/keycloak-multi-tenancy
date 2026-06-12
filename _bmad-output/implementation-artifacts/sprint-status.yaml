@@ -1,0 +1,99 @@
+# generated: 2026-06-12
+# last_updated: 2026-06-12
+# project: keycloak-multi-tenancy
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# TWO-REPO SETUP:
+# ===============
+# This project spans two repositories. Each story in epics.md carries a
+# "Working Repository" callout — check it before starting any story.
+#
+#   keycloak-multi-tenancy       ~/WorkSpace/azguards-whatsapp/keycloak-multi-tenancy
+#     → Java SPI extension (authenticators, required actions, endpoints, tracing, tests)
+#
+#   azguards-keycloak-custom-theme  ~/WorkSpace/azguards-whatsapp/azguards-keycloak-custom-theme
+#     → Keycloak custom theme (FreeMarker .ftl templates, CSS/JS, i18n bundles)
+#
+# For stories that touch BOTH repos: complete the Java/SPI work first so the
+# FTL template has the correct Keycloak context data available.
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-06-12
+last_updated: 2026-06-12
+project: keycloak-multi-tenancy
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Platform Upgrade & Design System Foundation
+  epic-1: in-progress
+  1-1-upgrade-keycloak-to-26-4-x-validate-the-extension: in-progress
+  1-2-shared-css-design-token-theme-light-dark: backlog
+  1-3-core-form-component-styles: backlog
+  1-4-feedback-list-component-styles: backlog
+  1-5-accessibility-utilities-focus-management: backlog
+  1-6-production-hygiene-observability-test-harness-baseline: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Streamlined Agent Login
+  epic-2: backlog
+  2-1-refactored-login-screen: backlog
+  2-2-inline-authentication-errors-calm-lockout-messaging: backlog
+  2-3-sign-in-with-sso-secondary-link: backlog
+  2-4-conditional-email-me-a-sign-in-link-magic-link: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Passwordless Passkey Sign-In & Enrollment
+  epic-3: backlog
+  3-1-username-bound-passkey-registration: backlog
+  3-2-passkey-first-authentication-on-login: backlog
+  3-3-graceful-passkey-fallback-degradation: backlog
+  3-4-optional-post-login-enrollment-prompt: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Multi-Account Selection
+  epic-4: backlog
+  4-1-conditional-account-selection-routing: backlog
+  4-2-account-picker-rows-with-role-last-used-pin: backlog
+  4-3-conditional-search-no-match-state: backlog
+  4-4-skeleton-loading-state: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Invited Agent Onboarding
+  epic-5: backlog
+  5-1-invite-link-email-verification: backlog
+  5-2-auto-accept-single-invitation-with-toast-decline: backlog
+  5-3-multi-invite-picker: backlog
+  5-4-non-blocking-async-user-service-sync-retry-banner: backlog
+  epic-5-retrospective: optional

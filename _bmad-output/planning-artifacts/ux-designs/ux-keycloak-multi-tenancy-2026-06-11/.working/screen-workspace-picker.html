@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--
+  SCREEN: Choose a workspace (multi-tenant picker)
+  JOURNEY/STATE: Sam — a returning member of several tenants, choosing which workspace
+  to enter after sign-in. Search at top; most-recently-used pinned and focused.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose a workspace</title>
+<style>
+/*
+  PALETTE — Direction "Trust & Clarity"
+  LIGHT: bg #F8FAFC | surface #FFFFFF | ink #0F172A | muted #64748B | border #E2E8F0
+         primary #2563EB | primary-hover #1D4ED8 | danger #DC2626 | danger-bg #FEF2F2 | success #16A34A
+  DARK:  bg #0B1220 | surface #111A2E | ink #E6EDF7 | muted #94A3B8 | border #1F2A44 | primary #3B82F6
+  Radius: field 10 | card 12 | card-lg 16 | pill 999. Heights 46. Card max 400.
+*/
+:root{
+  --bg:#F8FAFC; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B; --border:#E2E8F0;
+  --primary:#2563EB; --primary-hover:#1D4ED8; --danger:#DC2626; --danger-bg:#FEF2F2; --success:#16A34A;
+  --grad-a:#3B82F6; --grad-b:#2563EB;
+}
+.dark{
+  --bg:#0B1220; --surface:#111A2E; --ink:#E6EDF7; --muted:#94A3B8; --border:#1F2A44;
+  --primary:#3B82F6; --primary-hover:#2563EB;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;}
+.caption-top{max-width:760px;margin:18px auto 0;padding:0 20px;color:var(--muted);font-size:13px;line-height:1.5;}
+.stage{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06);padding:30px 26px 26px;}
+.brand{width:44px;height:44px;border-radius:12px;margin:0 auto 18px;
+  background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;
+  box-shadow:0 4px 12px rgba(37,99,235,.28);}
+h1{font-size:24px;font-weight:600;margin:0 0 16px;text-align:center;letter-spacing:-.2px;}
+.search{position:relative;margin-bottom:16px;}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);}
+.search input{width:100%;height:46px;border:1px solid var(--border);border-radius:10px;background:var(--surface);
+  color:var(--ink);font-size:15px;padding:0 14px 0 40px;outline:none;}
+.search input::placeholder{color:var(--muted);}
+.search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15);}
+.list{display:flex;flex-direction:column;gap:8px;}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:11px 13px;color:var(--ink);}
+.row:hover{border-color:var(--primary);}
+.row.focused{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.13);}
+.logo{width:40px;height:40px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:15px;font-weight:600;}
+.txt{flex:1;min-width:0;}
+.name{font-size:16px;font-weight:600;line-height:1.3;}
+.role{font-size:12px;font-weight:400;color:var(--muted);margin-top:2px;}
+.lastused{display:inline-block;font-size:11px;font-weight:600;color:var(--primary);
+  background:rgba(37,99,235,.1);border-radius:999px;padding:1px 8px;margin-bottom:5px;}
+.chev{color:var(--muted);flex:none;}
+.chev svg{width:18px;height:18px;}
+</style>
+</head>
+<body>
+  <p class="caption-top"><strong>Screen 5 — Choose a workspace (tenant picker).</strong> Sam belongs to several tenants and picks one after sign-in. The most-recently-used workspace is pinned at top and pre-focused.</p>
+  <div class="stage">
+    <main>
+      <div class="card">
+        <div class="brand">A</div>
+        <h1>Choose a workspace</h1>
+
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="search" placeholder="Search workspaces" autofocus>
+        </div>
+
+        <div class="list">
+          <button class="row focused">
+            <span class="logo" style="background:#2563EB">NW</span>
+            <span class="txt">
+              <span class="lastused">Last used</span>
+              <span class="name">Northwind Co</span>
+              <span class="role">Admin</span>
+            </span>
+            <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+
+          <button class="row">
+            <span class="logo" style="background:#7C3AED">AS</span>
+            <span class="txt">
+              <span class="name">Acme Studio</span>
+              <span class="role">Member</span>
+            </span>
+            <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+
+          <button class="row">
+            <span class="logo" style="background:#0891B2">BL</span>
+            <span class="txt">
+              <span class="name">Blue Lake Labs</span>
+              <span class="role">Owner</span>
+            </span>
+            <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+
+          <button class="row">
+            <span class="logo" style="background:#16A34A">GF</span>
+            <span class="txt">
+              <span class="name">Greenfield Partners</span>
+              <span class="role">Viewer</span>
+            </span>
+            <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+
+          <button class="row">
+            <span class="logo" style="background:#DB2777">OR</span>
+            <span class="txt">
+              <span class="name">Orbit Retail</span>
+              <span class="role">Member</span>
+            </span>
+            <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

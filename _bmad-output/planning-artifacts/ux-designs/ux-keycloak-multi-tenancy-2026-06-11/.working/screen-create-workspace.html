@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+  SCREEN: Name your workspace (new-user first-run) + provisioning interstitial variant
+  JOURNEY/STATE: Dana — brand-new user, first sign-in. Minimal single inline step to
+  name the workspace, with an inset preview of the "Getting your workspace ready" state.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Name your workspace</title>
+<style>
+/*
+  PALETTE — Direction "Trust & Clarity"
+  LIGHT: bg #F8FAFC | surface #FFFFFF | ink #0F172A | muted #64748B | border #E2E8F0
+         primary #2563EB | primary-hover #1D4ED8 | danger #DC2626 | danger-bg #FEF2F2 | success #16A34A
+  DARK:  bg #0B1220 | surface #111A2E | ink #E6EDF7 | muted #94A3B8 | border #1F2A44 | primary #3B82F6
+  Radius: field 10 | card 12 | card-lg 16 | pill 999. Heights 46. Card max 400.
+*/
+:root{
+  --bg:#F8FAFC; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B; --border:#E2E8F0;
+  --primary:#2563EB; --primary-hover:#1D4ED8; --danger:#DC2626; --danger-bg:#FEF2F2; --success:#16A34A;
+  --grad-a:#3B82F6; --grad-b:#2563EB;
+}
+.dark{
+  --bg:#0B1220; --surface:#111A2E; --ink:#E6EDF7; --muted:#94A3B8; --border:#1F2A44;
+  --primary:#3B82F6; --primary-hover:#2563EB;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;}
+.caption-top{max-width:760px;margin:18px auto 0;padding:0 20px;color:var(--muted);font-size:13px;line-height:1.5;}
+.stage{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.wrap{width:100%;max-width:400px;position:relative;}
+.card{width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06);padding:36px 32px 30px;}
+.brand{width:48px;height:48px;border-radius:12px;margin:0 auto 20px;
+  background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;
+  box-shadow:0 4px 12px rgba(37,99,235,.28);}
+h1{font-size:24px;font-weight:600;margin:0 0 6px;text-align:center;letter-spacing:-.2px;}
+.sub{font-size:15px;font-weight:400;color:var(--muted);text-align:center;margin:0 0 24px;line-height:1.5;}
+label{display:block;font-size:14px;font-weight:500;margin:0 0 7px;}
+.field{width:100%;height:46px;border:1px solid var(--primary);border-radius:10px;background:var(--surface);
+  color:var(--ink);font-size:15px;padding:0 14px;outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.15);}
+.field::placeholder{color:var(--muted);}
+.helper{font-size:12px;color:var(--muted);margin:8px 2px 0;}
+.btn{width:100%;height:46px;border:0;border-radius:10px;background:var(--primary);color:#fff;
+  font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;}
+.btn:hover{background:var(--primary-hover);}
+
+/* Inset variant — provisioning interstitial */
+.variant-label{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);
+  margin:30px auto 10px;text-align:center;}
+.inset{width:100%;max-width:300px;margin:0 auto;background:var(--surface);border:1px dashed var(--border);
+  border-radius:12px;padding:24px 20px;text-align:center;box-shadow:0 4px 14px rgba(15,23,42,.05);}
+.spinner{width:34px;height:34px;border-radius:50%;margin:0 auto 14px;
+  border:3px solid var(--border);border-top-color:var(--primary);
+  animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.inset .ptitle{font-size:15px;font-weight:600;}
+.inset .psub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+</style>
+</head>
+<body>
+  <p class="caption-top"><strong>Screen 4 — Name your workspace (first-run).</strong> Dana's new-user inline step. Below it, an inset preview of the "Getting your workspace ready" provisioning interstitial that follows.</p>
+  <div class="stage">
+    <div class="wrap">
+      <div class="card">
+        <div class="brand">A</div>
+        <h1>Name your workspace</h1>
+        <p class="sub">This is where you and your team will work.</p>
+        <form onsubmit="return false">
+          <label for="ws">Workspace name</label>
+          <input class="field" id="ws" type="text" placeholder="e.g. Priya's Studio" autofocus>
+          <p class="helper">You can change this later.</p>
+          <button class="btn" type="submit">Continue</button>
+        </form>
+      </div>
+
+      <p class="variant-label">Next state · provisioning interstitial</p>
+      <div class="inset" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="ptitle">Getting your workspace ready…</div>
+        <div class="psub">This usually takes a few seconds.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

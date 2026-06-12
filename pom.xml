@@ -4,7 +4,7 @@
 
     <groupId>dev.sultanov</groupId>
     <artifactId>keycloak-multi-tenancy</artifactId>
-    <version>26.4.6</version>
+    <version>26.4.7</version>
     <packaging>jar</packaging>
 
     <name>Keycloak Multi-Tenancy</name>
@@ -18,7 +18,7 @@
 
     <properties>
         <keycloak.version>26.4.6</keycloak.version>
-        <keycloak.client.version>26.4.6</keycloak.client.version>
+        <keycloak.client.version>26.0.9</keycloak.client.version>
     </properties>
 
     <dependencies>
@@ -61,7 +61,7 @@
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-admin-client</artifactId>
             <version>${keycloak.client.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

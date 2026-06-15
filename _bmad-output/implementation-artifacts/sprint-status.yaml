@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-12
+last_updated: 2026-06-15  # story 3-2 created → ready-for-dev; passkey-first auth on login (webauthn-authenticator flow wiring + webauthn-authenticate.ftl + login.ftl passkey affordance)
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system
@@ -58,26 +58,26 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # Epic 1: Platform Upgrade & Design System Foundation
   epic-1: in-progress
-  1-1-upgrade-keycloak-to-26-4-x-validate-the-extension: in-progress
-  1-2-shared-css-design-token-theme-light-dark: backlog
-  1-3-core-form-component-styles: backlog
-  1-4-feedback-list-component-styles: backlog
-  1-5-accessibility-utilities-focus-management: backlog
-  1-6-production-hygiene-observability-test-harness-baseline: backlog
+  1-1-upgrade-keycloak-to-26-4-x-validate-the-extension: done
+  1-2-shared-css-design-token-theme-light-dark: done
+  1-3-core-form-component-styles: done
+  1-4-feedback-list-component-styles: done
+  1-5-accessibility-utilities-focus-management: done
+  1-6-production-hygiene-observability-test-harness-baseline: done
   epic-1-retrospective: optional
 
   # Epic 2: Streamlined Agent Login
-  epic-2: backlog
-  2-1-refactored-login-screen: backlog
-  2-2-inline-authentication-errors-calm-lockout-messaging: backlog
-  2-3-sign-in-with-sso-secondary-link: backlog
-  2-4-conditional-email-me-a-sign-in-link-magic-link: backlog
-  epic-2-retrospective: optional
+  epic-2: in-progress
+  2-1-refactored-login-screen: done
+  2-2-inline-authentication-errors-calm-lockout-messaging: done
+  2-3-sign-in-with-sso-secondary-link: done
+  2-4-conditional-email-me-a-sign-in-link-magic-link: done
+  epic-2-retrospective: done
 
   # Epic 3: Passwordless Passkey Sign-In & Enrollment
-  epic-3: backlog
-  3-1-username-bound-passkey-registration: backlog
-  3-2-passkey-first-authentication-on-login: backlog
+  epic-3: in-progress
+  3-1-username-bound-passkey-registration: done
+  3-2-passkey-first-authentication-on-login: ready-for-dev
   3-3-graceful-passkey-fallback-degradation: backlog
   3-4-optional-post-login-enrollment-prompt: backlog
   epic-3-retrospective: optional

@@ -12,6 +12,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import java.net.URI;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -53,9 +54,20 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
                 log.error("Tenant representation cannot be null");
                 throw new BadRequestException("Tenant representation cannot be null");
             }
+
+            var requiredRole = realm.getAttribute("requiredRoleForTenantCreation");
+            if (!ObjectUtils.isEmpty(requiredRole) && !auth.hasAppRole(auth.getClient(), requiredRole)) {
+                log.error("Missing required role for tenant creation: {}", requiredRole);
+                throw new ForbiddenException(String.format("Missing required role for tenant creation: %s", requiredRole));
+            }
             if (isNullOrWhitespace(request.getName())) {
                 log.error("Tenant name cannot be null or empty");
                 throw new BadRequestException("Tenant name cannot be null or empty");
+            }
+            boolean nameExists = tenantProvider.getTenantsStream(realm, null, null, null, null)
+                    .anyMatch(t -> t.getName().equalsIgnoreCase(request.getName()));
+            if (nameExists) {
+                return Response.status(Response.Status.CONFLICT).entity("A tenant with this name already exists.").build();
             }
             if (isNullOrWhitespace(request.getMobileNumber())) {
                 log.error("Tenant mobile number cannot be null or empty");
@@ -78,7 +90,8 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
             }
 
             log.info("Tenant created successfully: {}", tenant.getName());
-            return Response.status(Response.Status.CREATED).entity(ModelMapper.toRepresentation(tenant)).build();
+            URI location = session.getContext().getUri().getAbsolutePathBuilder().path(tenant.getId()).build();
+            return Response.created(location).entity(ModelMapper.toRepresentation(tenant)).build();
         } catch (Exception e) {
             traceError = e;
             throw e;
@@ -105,17 +118,46 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
     })
     public List<TenantRepresentation> listTenants(
             @jakarta.ws.rs.core.Context jakarta.ws.rs.core.HttpHeaders headers,
+            @Parameter(description = "Search query for name or ID") @QueryParam("search") String search,
+            @Parameter(description = "Attribute query (e.g. key:value)") @QueryParam("q") String q,
+            @Parameter(description = "Pagination offset") @QueryParam("first") Integer first,
+            @Parameter(description = "Maximum results size") @QueryParam("max") Integer max,
             @Parameter(description = "Tenant mobile number (exact match)") @QueryParam("mobileNumber") String mobileNumber,
             @Parameter(description = "Tenant country code (exact match, e.g., 91)") @QueryParam("countryCode") String countryCode) {
 
         Span span = TracingHelper.startServerSpan("tenant.list", headers);
         Throwable traceError = null;
         try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
-            log.debug("Listing tenants with mobileNumber: {}, countryCode: {}", mobileNumber, countryCode);
+            log.debug("Listing tenants with search: {}, q: {}, first: {}, max: {}, mobileNumber: {}, countryCode: {}", search, q, first, max, mobileNumber, countryCode);
+
+            Map<String, String> attributes = null;
+            if (ObjectUtils.isNotEmpty(q)) {
+                attributes = new java.util.HashMap<>();
+                // Grammar: whitespace-separated key:value pairs. Values cannot contain spaces.
+                // Skip blank/malformed terms rather than inserting garbage keys.
+                for (String pair : q.trim().split("\\s+")) {
+                    if (pair.isEmpty()) {
+                        continue;
+                    }
+                    String[] split = pair.split(":", 2);
+                    if (split.length == 2 && !split[0].isBlank() && !split[1].isBlank()) {
+                        attributes.put(split[0].trim(), split[1].trim());
+                    }
+                }
+            }
+
+            java.util.stream.Stream<TenantModel> stream = tenantProvider.getTenantsStream(realm, search, attributes, mobileNumber, countryCode)
+                    .filter(tenant -> auth.isTenantsManager() || auth.isTenantMember(tenant));
+
+            if (first != null && first > 0) {
+                stream = stream.skip(first);
+            }
+            if (max != null && max > 0) {
+                stream = stream.limit(max);
+            }
 
             // We MUST collect into a List here, otherwise the span finishes before the stream is consumed by JAX-RS
-            return tenantProvider.getTenantsStream(realm, null, null, mobileNumber, countryCode)
-                    .map(ModelMapper::toRepresentation)
+            return stream.map(ModelMapper::toRepresentation)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             traceError = e;

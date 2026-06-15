@@ -49,7 +49,7 @@ public class BrowserIntegrationTest extends BaseIntegrationTest {
                 .signIn();
         assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
 
-        nextPage = ((ReviewInvitationsPage) nextPage).uncheckInvitation(invitationTenant.getName()).accept();
+        nextPage = ((ReviewInvitationsPage) nextPage).rejectInvitation(invitationTenant.getName()).proceed();
         assertThat(nextPage).isInstanceOf(CreateTenantPage.class);
 
         nextPage = ((CreateTenantPage) nextPage).fillTenantData(TenantData.random()).submit();
@@ -60,14 +60,14 @@ public class BrowserIntegrationTest extends BaseIntegrationTest {
     @Test
     void user_shouldNotBePromptedToCreateTenant_whenTheyAcceptInvitation() {
         var user = keycloakAdminClient.createVerifiedUser();
-        createInvitationFor(user.getUserData());
+        var invitationTenant = createInvitationFor(user.getUserData());
 
         var nextPage = AccountPage.open()
                 .signIn()
                 .fillCredentials(user.getUserData().getEmail(), user.getUserData().getPassword())
                 .signIn();
         assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
-        nextPage = ((ReviewInvitationsPage) nextPage).accept();
+        nextPage = ((ReviewInvitationsPage) nextPage).acceptInvitation(invitationTenant.getName()).proceed();
 
         assertThat(nextPage).isInstanceOf(AccountPage.class);
         assertThat(((AccountPage) nextPage).getLoggedInUser()).hasValue(user.getUserData().getEmail());
@@ -84,7 +84,10 @@ public class BrowserIntegrationTest extends BaseIntegrationTest {
                 .fillCredentials(user.getUserData().getEmail(), user.getUserData().getPassword())
                 .signIn();
         assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
-        nextPage = ((ReviewInvitationsPage) nextPage).accept();
+        nextPage = ((ReviewInvitationsPage) nextPage)
+                .acceptInvitation(invitationTenant1.getName())
+                .acceptInvitation(invitationTenant2.getName())
+                .proceed();
 
         assertThat(nextPage).isInstanceOf(SelectTenantPage.class);
         assertThat(((SelectTenantPage) nextPage).availableOptions()).containsExactlyInAnyOrder(invitationTenant1.getName(), invitationTenant2.getName());

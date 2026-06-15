@@ -33,6 +33,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         user.createTenant(); // complete "create-tenant" required action
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Tenant-" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("department", List.of("IT"));
         attributes.put("location", List.of("New York"));
@@ -110,11 +112,15 @@ public class TenantAttributesTest extends BaseIntegrationTest {
 
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("IT Tenant-" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
         Map<String, List<String>> attrs = new HashMap<>();
         attrs.put("department", List.of("IT"));
         tenantRequest.setAttributes(attrs);
         var tenantsResource = user.tenantsResource();
-        tenantsResource.createTenant(tenantRequest);
+        try (var response = tenantsResource.createTenant(tenantRequest)) {
+            assertThat(response.getStatus()).isEqualTo(org.apache.http.HttpStatus.SC_CREATED);
+        }
 
         // when
         var tenants = tenantsResource.listTenants(null, "department:IT", null, null);
@@ -132,6 +138,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         var user = keycloakAdminClient.createVerifiedUser();
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Test Tenant" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("", List.of("value"));
         tenantRequest.setAttributes(attributes);
@@ -148,6 +156,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         var user = keycloakAdminClient.createVerifiedUser();
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Test Tenant" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("key", List.of());
         tenantRequest.setAttributes(attributes);
@@ -164,6 +174,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         var user = keycloakAdminClient.createVerifiedUser();
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Test Tenant" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("key", List.of(""));
         tenantRequest.setAttributes(attributes);
@@ -181,6 +193,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         user.createTenant(); // complete "create-tenant" required action
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Tenant-" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
 
         String shortValue = "x".repeat(250);
         Map<String, List<String>> attributes = new HashMap<>();
@@ -206,6 +220,8 @@ public class TenantAttributesTest extends BaseIntegrationTest {
         user.createTenant(); // complete "create-tenant" required action
         var tenantRequest = new TenantRepresentation();
         tenantRequest.setName("Tenant-" + UUID.randomUUID());
+        tenantRequest.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRequest.setCountryCode("91");
 
         String longValue = "x".repeat(260); // Exceeds max length for value field
         Map<String, List<String>> attributes = new HashMap<>();

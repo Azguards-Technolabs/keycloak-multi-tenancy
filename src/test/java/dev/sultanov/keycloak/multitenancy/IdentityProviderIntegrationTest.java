@@ -340,7 +340,11 @@ public class IdentityProviderIntegrationTest extends BaseIntegrationTest {
                 .signIn()
                 .fillCredentials(user.getUserData().getEmail(), user.getUserData().getPassword())
                 .signIn();
-        ((ReviewInvitationsPage) nextPage).accept();
+        var reviewPage = (ReviewInvitationsPage) nextPage;
+        for (TenantRepresentation tenant : tenants) {
+            reviewPage.acceptInvitation(tenant.getName());
+        }
+        reviewPage.proceed();
         return new AbstractMap.SimpleImmutableEntry<>(user.getUserData(), tenants);
     }
 

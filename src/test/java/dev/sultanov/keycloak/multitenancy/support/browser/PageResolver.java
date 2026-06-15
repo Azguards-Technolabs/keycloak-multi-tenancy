@@ -9,18 +9,19 @@ class PageResolver {
 
     static AbstractPage resolve(Page page) {
         page.waitForSelector("h1");
-        if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Create tenant")).isVisible()) {
+        if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Create tenant")).first().isVisible()) {
             return new CreateTenantPage(page);
-        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Review invitations")).isVisible()) {
+        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Review Your Tenant Invitations")).first().isVisible()) {
             return new ReviewInvitationsPage(page);
-        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Select tenant")).isVisible()) {
+        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Select tenant")).first().isVisible()) {
             return new SelectTenantPage(page);
-        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Personal info")).isVisible()) {
+        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Personal info")).first().isVisible()) {
             return new AccountPage(page);
-        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("We are sorry...")).isVisible()) {
+        } else if (page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("We are sorry...")).first().isVisible()) {
             return new ErrorPage(page);
         } else {
             throw new IllegalStateException("Unexpected page");
         }
     }
 }
+

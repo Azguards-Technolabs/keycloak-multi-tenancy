@@ -138,7 +138,7 @@ public class MailIntegrationTest extends BaseIntegrationTest {
                 .fillCredentials(invitee.getUserData().getEmail(), invitee.getUserData().getPassword())
                 .signIn();
         assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
-        nextPage = ((ReviewInvitationsPage) nextPage).accept();
+        nextPage = ((ReviewInvitationsPage) nextPage).acceptInvitation(tenantResource.toRepresentation().getName()).proceed();
         assertThat(nextPage).isInstanceOf(AccountPage.class);
 
         // then

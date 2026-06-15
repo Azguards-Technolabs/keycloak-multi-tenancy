@@ -1,0 +1,11 @@
+{
+  "themes": [
+    {
+      "name": "azguards-whatsapp",
+      "types": [
+        "login",
+        "email"
+      ]
+    }
+  ]
+}

@@ -68,7 +68,7 @@ public class JpaTenantProvider implements TenantProvider {
         entity.setRealmId(realm.getId());
         entity.setMobileNumber(mobileNumber);
         entity.setCountryCode(countryCode);
-        entity.setStatus(status);
+        entity.setStatus(org.keycloak.utils.StringUtil.isNotBlank(status) ? status : "ACTIVE");
 
         em.persist(entity);
         em.flush();
@@ -91,8 +91,8 @@ public class JpaTenantProvider implements TenantProvider {
     }
 
     @Override
-    public Stream<TenantModel> getTenantsStream(RealmModel realm, String unusedNameOrIdQuery, Map<String, String> unusedAttributes, 
-                                                String mobileNumber, String countryCode) {
+    public Stream<TenantModel> getTenantsStream(RealmModel realm, String nameOrIdQuery, Map<String, String> attributes, 
+                                                 String mobileNumber, String countryCode) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
         CriteriaQuery<TenantEntity> queryBuilder = builder.createQuery(TenantEntity.class);
         Root<TenantEntity> root = queryBuilder.from(TenantEntity.class);
@@ -112,8 +112,29 @@ public class JpaTenantProvider implements TenantProvider {
         queryBuilder.where(finalPredicate).orderBy(builder.asc(root.get("name")));
 
         TypedQuery<TenantEntity> query = em.createQuery(queryBuilder);
-        return query.getResultStream()
+        Stream<TenantModel> stream = query.getResultStream()
                     .map(tenantEntity -> new TenantAdapter(session, realm, em, tenantEntity));
+
+        if (!ObjectUtils.isEmpty(nameOrIdQuery)) {
+            String lowerQuery = nameOrIdQuery.toLowerCase();
+            stream = stream.filter(t -> (t.getId() != null && t.getId().equalsIgnoreCase(lowerQuery))
+                    || (t.getName() != null && t.getName().toLowerCase().contains(lowerQuery)));
+        }
+
+        if (attributes != null && !attributes.isEmpty()) {
+            stream = stream.filter(t -> {
+                Map<String, List<String>> tenantAttrs = t.getAttributes();
+                for (Map.Entry<String, String> entry : attributes.entrySet()) {
+                    List<String> values = tenantAttrs.get(entry.getKey());
+                    if (values == null || !values.contains(entry.getValue())) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+
+        return stream;
     }
     
     @Override

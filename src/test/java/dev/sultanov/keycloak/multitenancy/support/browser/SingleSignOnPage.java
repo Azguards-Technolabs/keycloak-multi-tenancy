@@ -22,7 +22,7 @@ public class SingleSignOnPage extends AbstractPage {
         if (hasError()) {
             return this;
         } else {
-            assertThat(page.getByText("IDENTITY-PROVIDER").isVisible()).isTrue();
+            page.waitForURL("**/realms/identity-provider/**");
             return new SignInPage(page);
         }
     }

@@ -20,6 +20,8 @@ import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.services.managers.AuthenticationManager;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 @JBossLog
 public class SelectActiveTenant implements RequiredActionProvider, RequiredActionFactory {
@@ -28,55 +30,91 @@ public class SelectActiveTenant implements RequiredActionProvider, RequiredActio
 
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
-        log.debug("Evaluating triggers for select active tenant action");
-        if (getSessionNote(context, Constants.ACTIVE_TENANT_ID_SESSION_NOTE).isPresent()) {
-            return;
-        }
+        Span span = TracingHelper.startServerSpan("select-tenant.evaluateTriggers");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            if (context.getUser() != null) {
+                span.tag("user.id", context.getUser().getId());
+            }
+            log.debug("Evaluating triggers for select active tenant action");
+            if (getSessionNote(context, Constants.ACTIVE_TENANT_ID_SESSION_NOTE).isPresent()) {
+                return;
+            }
 
-        log.debug("No active tenant session note found");
-        var tenantMemberships = getFilteredTenantMemberships(context);
-        if (tenantMemberships.size() == 1) {
-            log.debug("User is a member of a single tenant, setting active tenant automatically");
-            context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, tenantMemberships.get(0).getTenant().getId());
-        } else if (tenantMemberships.size() > 1) {
-            log.debug("Tenant selection is required, adding required action");
-            context.getUser().addRequiredAction(ID);
+            log.debug("No active tenant session note found");
+            var tenantMemberships = getFilteredTenantMemberships(context);
+            if (tenantMemberships.size() == 1) {
+                log.debug("User is a member of a single tenant, setting active tenant automatically");
+                context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, tenantMemberships.get(0).getTenant().getId());
+            } else if (tenantMemberships.size() > 1) {
+                log.debug("Tenant selection is required, adding required action");
+                context.getUser().addRequiredAction(ID);
+            }
+        } catch (Exception ex) {
+            traceError = ex;
+            throw ex;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
-        var tenantMemberships = getFilteredTenantMemberships(context);
-        if (tenantMemberships.isEmpty()) {
-            context.success();
-        } else if (tenantMemberships.size() == 1) {
-            log.debugf("User is a member of a single tenant, setting active tenant automatically");
-            context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, tenantMemberships.get(0).getTenant().getId());
-            context.success();
-        } else {
-            log.debug("Initializing challenge to select an active tenant");
-            Response challenge = context.form().setAttribute("data", TenantsBean.fromMembership(tenantMemberships)).createForm("select-tenant.ftl");
-            context.challenge(challenge);
+        Span span = TracingHelper.startServerSpan("select-tenant.challenge");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            if (context.getUser() != null) {
+                span.tag("user.id", context.getUser().getId());
+            }
+            var tenantMemberships = getFilteredTenantMemberships(context);
+            if (tenantMemberships.isEmpty()) {
+                context.success();
+            } else if (tenantMemberships.size() == 1) {
+                log.debugf("User is a member of a single tenant, setting active tenant automatically");
+                context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, tenantMemberships.get(0).getTenant().getId());
+                context.success();
+            } else {
+                log.debug("Initializing challenge to select an active tenant");
+                Response challenge = context.form().setAttribute("data", TenantsBean.fromMembership(tenantMemberships)).createForm("select-tenant.ftl");
+                context.challenge(challenge);
+            }
+        } catch (Exception ex) {
+            traceError = ex;
+            throw ex;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 
     @Override
     public void processAction(RequiredActionContext context) {
-        var realm = context.getRealm();
-        var user = context.getUser();
-        var provider = context.getSession().getProvider(TenantProvider.class);
-        var memberships = provider.getTenantMembershipsStream(realm, user).toList();
+        Span span = TracingHelper.startServerSpan("select-tenant.processAction");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            if (context.getUser() != null) {
+                span.tag("user.id", context.getUser().getId());
+            }
+            var realm = context.getRealm();
+            var user = context.getUser();
+            var provider = context.getSession().getProvider(TenantProvider.class);
+            var memberships = provider.getTenantMembershipsStream(realm, user).toList();
 
-        var formData = context.getHttpRequest().getDecodedFormParameters();
-        var selectedTenant = formData.getFirst("tenant");
+            var formData = context.getHttpRequest().getDecodedFormParameters();
+            var selectedTenant = formData.getFirst("tenant");
 
-        if (memberships.stream().anyMatch(membership -> membership.getTenant().getId().equals(selectedTenant))) {
-            log.debugf("Active tenant selected %s, setting session note", selectedTenant);
-            context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, selectedTenant);
-            context.success();
-        } else {
-            log.warnf("User %s is not a member of the selected tenant %s", user.getId(), selectedTenant);
-            context.failure();
+            if (memberships.stream().anyMatch(membership -> membership.getTenant().getId().equals(selectedTenant))) {
+                log.debugf("Active tenant selected %s, setting session note", selectedTenant);
+                context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, selectedTenant);
+                context.success();
+            } else {
+                log.warnf("User %s is not a member of the selected tenant %s", user.getId(), selectedTenant);
+                context.failure();
+            }
+        } catch (Exception ex) {
+            traceError = ex;
+            throw ex;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 

@@ -4,7 +4,7 @@ baseline_commit: 1a7777de73479187b334112f641f60be340a461d
 
 # Story 1.1: Upgrade Keycloak to 26.4.x & Validate the Extension
 
-Status: in-progress
+Status: done
 
 ## Story
 

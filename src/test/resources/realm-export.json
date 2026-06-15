@@ -1924,6 +1924,14 @@
           "priority": 31,
           "autheticatorFlow": false,
           "userSetupAllowed": false
+        },
+        {
+          "authenticator": "webauthn-authenticator",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 32,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
         }
       ]
     },

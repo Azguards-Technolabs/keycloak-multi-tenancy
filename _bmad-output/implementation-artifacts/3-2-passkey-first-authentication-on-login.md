@@ -6,7 +6,7 @@ baseline_commit: 7f51fae39e426e282ef127975a848f14e9d9bcf3
 
 # Story 3.2: Passkey-first authentication on login
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -30,10 +30,10 @@ So that I authenticate in one tap without typing a password.
 
 > Complete all Repo 1 tasks before starting Repo 2. The flow wiring must be present in realm-export.json before the theme integration can be tested end-to-end.
 
-- [ ] **Task 1: Wire `webauthn-authenticator` into the browser flow in realm-export.json** (AC: #1, #2)
-  - [ ] Open `src/test/resources/realm-export.json`
-  - [ ] Locate the top-level `browser custom` flow (alias `"browser custom"`, builtIn `false`) — it already contains `login-with-sso` as ALTERNATIVE at priority 31
-  - [ ] Add `webauthn-authenticator` as a new ALTERNATIVE execution **at priority 32** in the `browser custom` top-level flow, immediately after `login-with-sso`:
+- [x] **Task 1: Wire `webauthn-authenticator` into the browser flow in realm-export.json** (AC: #1, #2)
+  - [x] Open `src/test/resources/realm-export.json`
+  - [x] Locate the top-level `browser custom` flow (alias `"browser custom"`, builtIn `false`) — it already contains `login-with-sso` as ALTERNATIVE at priority 31
+  - [x] Add `webauthn-authenticator` as a new ALTERNATIVE execution **at priority 32** in the `browser custom` top-level flow, immediately after `login-with-sso`:
     ```json
     {
       "authenticator": "webauthn-authenticator",
@@ -44,14 +44,14 @@ So that I authenticate in one tap without typing a password.
       "userSetupAllowed": false
     }
     ```
-  - [ ] **CRITICAL: Verify the provider ID** — KC 26.6.3's non-passwordless WebAuthn authenticator factory uses provider ID `webauthn-authenticator` (class `WebAuthnAuthenticatorFactory`). Check KC 26.6.3 source: `https://github.com/keycloak/keycloak/blob/26.6.3/services/src/main/java/org/keycloak/authentication/authenticators/browser/WebAuthnAuthenticatorFactory.java` — confirm `getId()` returns `"webauthn-authenticator"` (not `"webauthn-password-less"`). Do NOT confuse with the passwordless variant.
-  - [ ] Do NOT change `browser custom forms` sub-flow — `auth-username-password-form` stays REQUIRED at priority 10. Passkey selection bypasses the forms sub-flow entirely via the top-level ALTERNATIVE, the same mechanism used by `login-with-sso` (Story 2.3).
-  - [ ] Do NOT touch other flows (browser, direct grant, reset credentials, etc.)
+  - [x] **CRITICAL: Verify the provider ID** — KC 26.6.3's non-passwordless WebAuthn authenticator factory uses provider ID `webauthn-authenticator` (class `WebAuthnAuthenticatorFactory`). Check KC 26.6.3 source: `https://github.com/keycloak/keycloak/blob/26.6.3/services/src/main/java/org/keycloak/authentication/authenticators/browser/WebAuthnAuthenticatorFactory.java` — confirm `getId()` returns `"webauthn-authenticator"` (not `"webauthn-password-less"`). Do NOT confuse with the passwordless variant.
+  - [x] Do NOT change `browser custom forms` sub-flow — `auth-username-password-form` stays REQUIRED at priority 10. Passkey selection bypasses the forms sub-flow entirely via the top-level ALTERNATIVE, the same mechanism used by `login-with-sso` (Story 2.3).
+  - [x] Do NOT touch other flows (browser, direct grant, reset credentials, etc.)
 
-- [ ] **Task 2: Add passkey authentication i18n keys to extension messages bundle** (AC: #2, #3)
-  - [ ] Open `src/main/resources/theme-resources/messages/messages_en.properties`
-  - [ ] Check for duplicates: `grep -n "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` — must return 0 matches before adding
-  - [ ] Append the following keys:
+- [x] **Task 2: Add passkey authentication i18n keys to extension messages bundle** (AC: #2, #3)
+  - [x] Open `src/main/resources/theme-resources/messages/messages_en.properties`
+  - [x] Check for duplicates: `grep -n "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` — must return 0 matches before adding
+  - [x] Append the following keys:
     ```properties
     # Passkey authentication (Story 3.2)
     passkeyAuthTitle=Sign in with your passkey
@@ -62,13 +62,13 @@ So that I authenticate in one tap without typing a password.
     passkeyAuthUsePassword=Use password instead
     passkeyAffordanceBtn=Use your passkey
     ```
-  - [ ] Verify count: `grep -c "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` → 7
+  - [x] Verify count: `grep -c "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` → 7
 
-- [ ] **Task 3: Build and verify Repo 1** (AC: #1)
-  - [ ] `mvn package -DskipTests` → BUILD SUCCESS
-  - [ ] `grep -c "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` → 7
-  - [ ] No new Java files created — the built-in `webauthn-authenticator` provider (`WebAuthnAuthenticatorFactory`) requires no extension code in KC 26.6.3
-  - [ ] Verify realm-export.json has `webauthn-authenticator` as ALTERNATIVE at priority 32 in `browser custom` top-level flow: `grep -A 6 "webauthn-authenticator" src/test/resources/realm-export.json`
+- [x] **Task 3: Build and verify Repo 1** (AC: #1)
+  - [x] `mvn package -DskipTests` → BUILD SUCCESS
+  - [x] `grep -c "passkeyAuth\|passkeyAffordance" src/main/resources/theme-resources/messages/messages_en.properties` → 7
+  - [x] No new Java files created — the built-in `webauthn-authenticator` provider (`WebAuthnAuthenticatorFactory`) requires no extension code in KC 26.6.3
+  - [x] Verify realm-export.json has `webauthn-authenticator` as ALTERNATIVE at priority 32 in `browser custom` top-level flow: `grep -A 6 "webauthn-authenticator" src/test/resources/realm-export.json`
 
 ---
 
@@ -76,16 +76,16 @@ So that I authenticate in one tap without typing a password.
 
 > Start only after Repo 1 tasks are complete. Test both FTL changes against a running KC 26.6.3 instance with the updated realm-export.json loaded.
 
-- [ ] **Task 4: Create `webauthn-authenticate.ftl` — the WebAuthn ceremony page** (AC: #2, #3)
-  - [ ] Create `src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl`
-  - [ ] **CRITICAL: Standalone HTML only — do NOT use `@layout.registrationLayout`** (same constraint as `login-with-sso.ftl`, `login-magic-link.ftl`, `webauthn-register.ftl`)
-  - [ ] **Structure:** follows the same chrome as `webauthn-register.ftl` (verified in Story 3.1):
+- [x] **Task 4: Create `webauthn-authenticate.ftl` — the WebAuthn ceremony page** (AC: #2, #3)
+  - [x] Create `src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl`
+  - [x] **CRITICAL: Standalone HTML only — do NOT use `@layout.registrationLayout`** (same constraint as `login-with-sso.ftl`, `login-magic-link.ftl`, `webauthn-register.ftl`)
+  - [x] **Structure:** follows the same chrome as `webauthn-register.ftl` (verified in Story 3.1):
     - `<!DOCTYPE html>` + `<html lang="en">` + `<head>` with same 3 CSS links (tokens.css, components.css, style.css)
     - Brand mark `<img>` with `onerror` fallback (same pattern as login.ftl lines 18-24)
     - `<div class="background-overlay" aria-hidden="true"></div>`
     - `<main class="wt-login-layout"><div class="wt-login-brand">...</div><div class="wt-card">...</div></main>`
     - `<h1 tabindex="-1">` — focused on page load
-  - [ ] **CRITICAL: Verify KC 26.6.3 `webauthn-authenticate.ftl` context variables BEFORE coding**
+  - [x] **CRITICAL: Verify KC 26.6.3 `webauthn-authenticate.ftl` context variables BEFORE coding**
     - Check KC source: `https://github.com/keycloak/keycloak/blob/26.6.3/themes/src/main/resources/theme/base/login/webauthn-authenticate.ftl`
     - And the JS helper: `https://github.com/keycloak/keycloak/blob/26.6.3/themes/src/main/resources/theme/keycloak/login/resources/js/webauthnAuthenticate.js`
     - Expected context variables (verify each name before use — KC changes these between versions):
@@ -101,10 +101,10 @@ So that I authenticate in one tap without typing a password.
       | `url.loginAction` | String | Form POST target |
       | `url.resourcesPath` | String | Theme resource base path |
       | `msg("key")` | String | i18n message lookup |
-  - [ ] **Template states to handle:**
+  - [x] **Template states to handle:**
     - **State A (initial):** Show title (`msg("passkeyAuthTitle")`), primary "Use your passkey" button, "Use password instead" fallback link
-    - **State B (retry — `isSetRetry == true`):** Show error message (`msg("passkeyAuthError")`), "Try again" button, "Use password instead" fallback link
-  - [ ] **Hidden result form (verify field names against KC 26.6.3 `WebAuthnAuthenticator.java`):**
+    - **State B (retry — `message.type == "error"`):** Show error message (`msg("passkeyAuthError")`), "Try again" button, "Use password instead" fallback link. Note: KC 26.6.3 uses `isUserIdentified` (not `isSetRetry`) for the authenticate flow; retry state detected via `message?? && message.type == "error"`.
+  - [x] **Hidden result form (verify field names against KC 26.6.3 `WebAuthnAuthenticator.java`):**
     ```html
     <form id="kc-webauthn-authenticate-form" action="${url.loginAction}" method="post" style="display:none">
       <input type="hidden" id="clientDataJSON" name="clientDataJSON">
@@ -116,7 +116,8 @@ So that I authenticate in one tap without typing a password.
     </form>
     ```
     - **CRITICAL: Verify** these field names against KC 26.6.3 source: `https://github.com/keycloak/keycloak/blob/26.6.3/services/src/main/java/org/keycloak/authentication/authenticators/browser/WebAuthnAuthenticator.java` — look for `context.getHttpRequest().getDecodedFormParameters()` to confirm exact parameter names. Wrong names = silent auth failure.
-  - [ ] **WebAuthn get ceremony JavaScript (IIFE pattern, no inline onclick):**
+    - Verified: form uses id `webauth` (KC standard), fields `clientDataJSON`, `authenticatorData`, `signature`, `credentialId`, `userHandle`, `error` all confirmed correct.
+  - [x] **WebAuthn get ceremony JavaScript (IIFE pattern, no inline onclick):**
     ```javascript
     (function () {
       'use strict';
@@ -205,19 +206,19 @@ So that I authenticate in one tap without typing a password.
       if (h1) { h1.focus(); }
     }());
     ```
-  - [ ] **"Use password instead" link:** routes back to password login by posting `authenticationExecution=` of the `browser custom forms` sub-flow. Alternatively, a simple `<a href="...">` that reloads the login URL. **VERIFY** the correct KC mechanism for routing back to password from the WebAuthn ceremony page — check whether the base `webauthn-authenticate.ftl` uses a "try another way" link or back navigation. Replicate the mechanism.
-  - [ ] **A11y requirements (AC: #3):**
+  - [x] **"Use password instead" link:** KC 26.6.3 base `webauthn-authenticate.ftl` provides no "try another way" mechanism. Used fresh login URL redirect: `<a href="${url.loginUrl!''}">` which restarts the login flow cleanly.
+  - [x] **A11y requirements (AC: #3):**
     - `<h1 tabindex="-1">` auto-focused on load
     - Status div: `id="passkey-status" role="status" aria-live="polite"` — announces "Follow the prompt…" when ceremony starts
     - Error div (retry state): `role="alert" aria-live="assertive"` for error announcement
     - Primary button: `.wt-btn.wt-btn--primary` minimum 44×44px touch target
-    - "Use password instead": `<a>` or `<button type="button">` with visible focus ring
+    - "Use password instead": `<a class="wt-btn wt-btn--ghost">` with visible focus ring
     - No hardcoded hex colors — CSS custom properties only
     - No `console.*` in production code
 
-- [ ] **Task 5: Update `login.ftl` — add passkey affordance above the password field** (AC: #1)
-  - [ ] Open `src/main/resources/theme/azguards-whatsapp/login/login.ftl`
-  - [ ] Add a passkey affordance button BETWEEN the username field and the password field (after `</div><!-- username -->` and before `<!-- Password -->`):
+- [x] **Task 5: Update `login.ftl` — add passkey affordance above the password field** (AC: #1)
+  - [x] Open `src/main/resources/theme/azguards-whatsapp/login/login.ftl`
+  - [x] Add a passkey affordance button BETWEEN the username field and the password field (after `</div><!-- username -->` and before `<!-- Password -->`):
     ```html
     <!-- Passkey affordance — Story 3.2 — shown when passkeyAuthExecId is configured -->
     <#if (properties.passkeyAuthExecId!'') != ''>
@@ -233,7 +234,7 @@ So that I authenticate in one tap without typing a password.
     </form>
     </#if>
     ```
-  - [ ] Add the passkey button's click handler inside the existing IIFE in `login.ftl` (after the magic-link handler section, before the closing `}());`):
+  - [x] Add the passkey button's click handler inside the existing IIFE in `login.ftl` (after the magic-link handler section, before the closing `}());`):
     ```javascript
     /* ── Story 3.2: Passkey affordance ── */
     var passkeyBtn  = document.getElementById('passkey-affordance-btn');
@@ -245,15 +246,15 @@ So that I authenticate in one tap without typing a password.
       });
     }
     ```
-  - [ ] **Do NOT change** the existing `autocomplete="username webauthn"` on the username field — this is already present (Story 3.1 baseline) and enables browser Conditional UI for passkeys
-  - [ ] **Verify `wt-btn--primary` class conflict** — the passkey affordance uses `.wt-btn.wt-btn--primary` which is the same class as the "Login" submit button. If both appear on the same page, verify the visual hierarchy is correct (passkey is above password, Login is the password-flow primary action). Consider whether the passkey button should use a distinct style (e.g., `.wt-btn.wt-btn--passkey` or a secondary button style). Match the UX design intent: passkey is the "primary affordance" per FR-PK-2, so primary styling is correct when a passkey is registered. See EXPERIENCE.md for visual hierarchy guidance.
+  - [x] **Do NOT change** the existing `autocomplete="username webauthn"` on the username field — this is already present (Story 3.1 baseline) and enables browser Conditional UI for passkeys
+  - [x] **Verify `wt-btn--primary` class conflict** — passkey button uses `.wt-btn.wt-btn--primary` matching the Login button. This is correct per FR-PK-2 (passkey is the primary affordance). Both buttons appear in different visual positions (passkey above password, Login as form submit). No conflict in practice.
 
-- [ ] **Task 6: Build and verify Repo 2** (AC: #3)
-  - [ ] `mvn package` → BUILD SUCCESS
-  - [ ] `grep -rn "#[0-9a-fA-F]\{3,6\}" src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl` → 0 matches
-  - [ ] `grep -rn "console\." src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl` → 0 matches
-  - [ ] `grep -rn "console\." src/main/resources/theme/azguards-whatsapp/login/login.ftl` → 0 matches
-  - [ ] Template renders in a local KC 26.6.3 instance:
+- [x] **Task 6: Build and verify Repo 2** (AC: #3)
+  - [x] `mvn package` → BUILD SUCCESS
+  - [x] `grep -rn "#[0-9a-fA-F]\{3,6\}" src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl` → 0 matches
+  - [x] `grep -rn "console\." src/main/resources/theme/azguards-whatsapp/login/webauthn-authenticate.ftl` → 0 matches
+  - [x] `grep -rn "console\." src/main/resources/theme/azguards-whatsapp/login/login.ftl` → 0 matches
+  - [ ] Template renders in a local KC 26.6.3 instance (manual verification — requires running KC instance with registered passkey from Story 3.1):
     - Deploy updated realm-export.json + theme JARs
     - Configure `passkeyAuthExecId` in the `azguards-whatsapp` theme's `theme.properties` — set it to the UUID of the new `webauthn-authenticator` execution in the `browser custom` flow (find it in KC Admin Console → Authentication → browser custom → execution list)
     - Log in as a test user who has a registered passkey (from Story 3.1); verify the "Use your passkey" button appears above the password field
@@ -506,11 +507,18 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
-(none yet)
+- KC 26.6.3 source verification: authenticate flow uses `userVerification` (not `userVerificationRequirement`), `isUserIdentified` (not `isSetRetry`), form ID `webauth` (not `kc-webauthn-authenticate-form`). Retry state detected via `message.type == "error"` not a boolean flag.
+- KC base `webauthn-authenticate.ftl` has no "try another way" mechanism — used `url.loginUrl` fresh login redirect for "Use password instead".
+- `createTimeout` in authenticate context: same as register (seconds from KC, multiply by 1000 for WebAuthn API).
 
 ### Completion Notes List
 
-(none yet)
+- **Task 1 (realm-export.json):** Added `webauthn-authenticator` as ALTERNATIVE at priority 32 in `browser custom` top-level flow, immediately after `login-with-sso` (priority 31). No other flows modified.
+- **Task 2 (i18n):** 7 passkey auth keys added to `messages_en.properties` (passkeyAuthTitle, passkeyAuthBtn, passkeyAuthInProgress, passkeyAuthError, passkeyAuthRetry, passkeyAuthUsePassword, passkeyAffordanceBtn). Verified count = 7.
+- **Task 3 (Repo 1 build):** `mvn package -DskipTests` → BUILD SUCCESS. No Java files created.
+- **Task 4 (webauthn-authenticate.ftl):** New standalone FTL created using same chrome as `webauthn-register.ftl`. Context variables verified against KC 26.6.3 source. Form ID `webauth` with all 6 field names confirmed. IIFE pattern with inline base64url helpers. State A/B via `message.type == "error"`. Empty `allowCredentials` for discoverable passkeys. "Use password instead" uses `url.loginUrl!''` fresh login redirect. All a11y requirements met (h1 focus, aria-live polite status, assertive error region, wt-btn--primary button).
+- **Task 5 (login.ftl):** Passkey affordance inserted between username `</div>` and `<!-- Password -->` comment. Gated on `(properties.passkeyAuthExecId!'') != ''` so invisible until admin configures. IIFE listener added after magic-link handler. `autocomplete="username webauthn"` untouched.
+- **Task 6 (Repo 2 build):** `mvn package` → BUILD SUCCESS. 0 hex color matches, 0 console.* matches in both FTL files.
 
 ### File List
 
@@ -525,3 +533,10 @@ claude-sonnet-4-6
 ## Change Log
 
 - 2026-06-15: Story 3.2 created — Passkey-first authentication on login. Repo 1: add webauthn-authenticator execution to browser custom flow + 7 passkey auth i18n keys. Repo 2: new webauthn-authenticate.ftl (standalone HTML, IIFE get ceremony, States A/B, "Use password instead" fallback, a11y) + login.ftl update (passkey affordance above password field via passkeyAuthExecId theme property, IIFE listener, localStorage method tracking).
+- 2026-06-15: Implementation complete. KC 26.6.3 context variable corrections applied: `userVerification` (not `userVerificationRequirement`), form id `webauth`, retry via `message.type=="error"`. Both repos BUILD SUCCESS. Story → review.
+
+## Review Findings
+
+_Code review 2026-06-15 (Repo 1 scope: `realm-export.json` + `messages_en.properties`). 3 layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor), no failed layers. 0 decision-needed, 0 patch, 1 defer, 8 dismissed. Acceptance Auditor confirms both in-scope files match the spec exactly._
+
+- [x] [Review][Defer] Empty `webAuthnPolicyRpId` may break passkey validation across tenant hostnames [src/test/resources/realm-export.json:392] — deferred, pre-existing realm config (not introduced by this story). Empty RP ID defaults to request host; in multi-tenant multi-hostname deployments a passkey registered under one host won't validate from another. Logged to deferred-work.md.

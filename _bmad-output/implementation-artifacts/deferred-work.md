@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of story-3.2 (2026-06-15)
+
+- **Empty `webAuthnPolicyRpId` may break passkey validation across tenant hostnames** [`src/test/resources/realm-export.json:392`] — `webAuthnPolicyRpId` is `""`, so Keycloak defaults the RP ID to the request host. In a multi-tenant deployment served under multiple hostnames, a passkey registered while on one host's effective RP ID will fail the assertion (`navigator.credentials.get`) when the user later authenticates from a different hostname. Pre-existing realm config — not introduced by Story 3.2's flow-wiring/i18n change — but directly affects whether passkey-first auth works across tenants. Revisit when the deployment hostname strategy is finalized (set RP ID to the registrable parent domain).
+
 ## Deferred from: code review of story-3.1 (2026-06-15)
 
 - **Dirty working tree — unrelated Story 2.4 / tenant-CRUD changes pollute the story diff** — Repo 1 (`keycloak-multi-tenancy`) carries many uncommitted, unrelated modified files (Story 2.4 magic-link + tenant-CRUD Java/tests) that were not stashed/committed before Story 3.1 started, contradicting the Epic 2 retro S1 lesson. Story 3.1's own touched files are correct, but the unrelated changes should be separated/committed before merge so the story diff is clean.

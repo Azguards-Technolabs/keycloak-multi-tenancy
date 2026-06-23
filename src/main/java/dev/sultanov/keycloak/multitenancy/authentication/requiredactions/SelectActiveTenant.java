@@ -68,6 +68,9 @@ public class SelectActiveTenant implements RequiredActionProvider, RequiredActio
             }
             var tenantMemberships = getFilteredTenantMemberships(context);
             if (tenantMemberships.isEmpty()) {
+                span.tag("routing.zero_accounts", "true");
+                log.debugf("User has no tenant memberships in challenge — routing to create-tenant");
+                context.getUser().addRequiredAction(CreateTenant.ID);
                 context.success();
             } else if (tenantMemberships.size() == 1) {
                 log.debugf("User is a member of a single tenant, setting active tenant automatically");
@@ -75,7 +78,11 @@ public class SelectActiveTenant implements RequiredActionProvider, RequiredActio
                 context.success();
             } else {
                 log.debug("Initializing challenge to select an active tenant");
-                Response challenge = context.form().setAttribute("data", TenantsBean.fromMembership(tenantMemberships)).createForm("select-tenant.ftl");
+                String lastUsedTenantId = context.getUser().getFirstAttribute(Constants.ACTIVE_TENANT_ATTRIBUTE);
+                span.tag("last_used_tenant.found", String.valueOf(lastUsedTenantId != null));
+                Response challenge = context.form()
+                        .setAttribute("data", TenantsBean.fromMembership(tenantMemberships, lastUsedTenantId))
+                        .createForm("select-tenant.ftl");
                 context.challenge(challenge);
             }
         } catch (Exception ex) {
@@ -105,6 +112,7 @@ public class SelectActiveTenant implements RequiredActionProvider, RequiredActio
             if (memberships.stream().anyMatch(membership -> membership.getTenant().getId().equals(selectedTenant))) {
                 log.debugf("Active tenant selected %s, setting session note", selectedTenant);
                 context.getAuthenticationSession().setUserSessionNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, selectedTenant);
+                context.getUser().setSingleAttribute(Constants.ACTIVE_TENANT_ATTRIBUTE, selectedTenant);
                 context.success();
             } else {
                 log.warnf("User %s is not a member of the selected tenant %s", user.getId(), selectedTenant);

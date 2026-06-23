@@ -48,18 +48,24 @@ public class JpaTenantProvider implements TenantProvider {
 
     @Override
     public TenantModel createTenant(RealmModel realm, String tenantName, String mobileNumber, String countryCode, String status, UserModel user) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<Long> query = cb.createQuery(Long.class);
-        Root<TenantEntity> root = query.from(TenantEntity.class);
-        Predicate realmPredicate = cb.equal(root.get("realmId"), realm.getId());
-        Predicate mobilePredicate = cb.equal(root.get("mobileNumber"), mobileNumber);
-        Predicate countryCodePredicate = cb.equal(root.get("countryCode"), countryCode);
+        // Only enforce mobileNumber+countryCode uniqueness when both are provided; empty values
+        // carry no identity and allowing the constraint to fire would reject every second tenant
+        // created without a mobile number (e.g. from the create-tenant browser flow in tests and
+        // in any realm that doesn't collect phone numbers yet).
+        if (ObjectUtils.isNotEmpty(mobileNumber) && ObjectUtils.isNotEmpty(countryCode)) {
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Long> query = cb.createQuery(Long.class);
+            Root<TenantEntity> root = query.from(TenantEntity.class);
+            Predicate realmPredicate = cb.equal(root.get("realmId"), realm.getId());
+            Predicate mobilePredicate = cb.equal(root.get("mobileNumber"), mobileNumber);
+            Predicate countryCodePredicate = cb.equal(root.get("countryCode"), countryCode);
 
-        query.select(cb.count(root)).where(cb.and(realmPredicate, mobilePredicate, countryCodePredicate));
-        Long count = em.createQuery(query).getSingleResult();
+            query.select(cb.count(root)).where(cb.and(realmPredicate, mobilePredicate, countryCodePredicate));
+            Long count = em.createQuery(query).getSingleResult();
 
-        if (count > 0) {
-            throw new ModelDuplicateException("A tenant with this mobile number and country code already exists.");
+            if (count > 0) {
+                throw new ModelDuplicateException("A tenant with this mobile number and country code already exists.");
+            }
         }
 
         TenantEntity entity = new TenantEntity();
@@ -217,6 +223,16 @@ public class JpaTenantProvider implements TenantProvider {
         query.setParameter("realmId", realm.getId());
         query.setParameter("search", user.getEmail());
         return query.getResultStream().map(i -> new TenantInvitationAdapter(session, realm, em, i));
+    }
+
+    @Override
+    public Optional<TenantInvitationModel> findInvitationById(RealmModel realm, String id) {
+        TypedQuery<TenantInvitationEntity> query = em.createNamedQuery("getInvitationById", TenantInvitationEntity.class);
+        query.setParameter("id", id);
+        query.setParameter("realmId", realm.getId());
+        return query.getResultStream()
+                .findFirst()
+                .map(entity -> new TenantInvitationAdapter(session, realm, em, entity));
     }
 
     @Override

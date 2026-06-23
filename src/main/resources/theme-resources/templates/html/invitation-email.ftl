@@ -1,4 +1,4 @@
 <#import "template.ftl" as layout>
 <@layout.emailLayout>
-    ${kcSanitize(msg("invitationEmailBodyHtml", tenantName, accountPageUri))?no_esc}
+    ${kcSanitize(msg("invitationEmailBodyHtml", tenantName, inviteVerifyUrl))?no_esc}
 </@layout.emailLayout>

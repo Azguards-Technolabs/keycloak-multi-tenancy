@@ -25,7 +25,7 @@ public class ReviewInvitationsPage extends AbstractPage {
     }
 
     public AbstractPage proceed() {
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Proceed")).click();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Go to Dashboard")).click();
         return PageResolver.resolve(page);
     }
 

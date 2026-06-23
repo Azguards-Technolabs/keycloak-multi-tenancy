@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-15  # story 3-2 → done; passkey-first auth code review passed (1 defer, 0 patch)
+last_updated: 2026-06-23  # story 5-4 → done (code review)
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system
@@ -78,22 +78,22 @@ development_status:
   epic-3: in-progress
   3-1-username-bound-passkey-registration: done
   3-2-passkey-first-authentication-on-login: done
-  3-3-graceful-passkey-fallback-degradation: backlog
-  3-4-optional-post-login-enrollment-prompt: backlog
+  3-3-graceful-passkey-fallback-degradation: done
+  3-4-optional-post-login-enrollment-prompt: done
   epic-3-retrospective: optional
 
   # Epic 4: Multi-Account Selection
-  epic-4: backlog
-  4-1-conditional-account-selection-routing: backlog
-  4-2-account-picker-rows-with-role-last-used-pin: backlog
-  4-3-conditional-search-no-match-state: backlog
-  4-4-skeleton-loading-state: backlog
+  epic-4: in-progress
+  4-1-conditional-account-selection-routing: done
+  4-2-account-picker-rows-with-role-last-used-pin: done
+  4-3-conditional-search-no-match-state: done
+  4-4-skeleton-loading-state: done
   epic-4-retrospective: optional
 
   # Epic 5: Invited Agent Onboarding
-  epic-5: backlog
-  5-1-invite-link-email-verification: backlog
-  5-2-auto-accept-single-invitation-with-toast-decline: backlog
-  5-3-multi-invite-picker: backlog
-  5-4-non-blocking-async-user-service-sync-retry-banner: backlog
+  epic-5: in-progress
+  5-1-invite-link-email-verification: done
+  5-2-auto-accept-single-invitation-with-toast-decline: done
+  5-3-multi-invite-picker: done
+  5-4-non-blocking-async-user-service-sync-retry-banner: done
   epic-5-retrospective: optional

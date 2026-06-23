@@ -1,3 +1,3 @@
 <#ftl output_format="plainText">
-${msg("invitationEmailBody", tenantName, accountPageUri)}
+${msg("invitationEmailBody", tenantName, inviteVerifyUrl)}
 

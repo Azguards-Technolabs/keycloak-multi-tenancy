@@ -30,6 +30,14 @@ public class MultitenancyRootResource {
 			return new SwitchActiveTenant(session);
 		} else if (path.endsWith("/user-tenants")) {
 			return new GetUserTenants(session);
+		} else if (path.endsWith("/invite-verify")) {
+			return new InviteLinkVerificationResource(session);
+		} else if (path.endsWith("/invite-decline")) {
+			return new InviteDeclineResource(session);
+		} else if (path.endsWith("/toast-info")) {
+			return new ToastInfoResource(session);
+		} else if (path.endsWith("/user-service-retry")) {
+			return new UserServiceRetryResource(session);
 		}
 
 		return Response.status(Response.Status.NOT_FOUND).build();

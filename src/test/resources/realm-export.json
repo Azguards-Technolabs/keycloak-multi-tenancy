@@ -2502,6 +2502,15 @@
       "defaultAction": false,
       "priority": 1003,
       "config": {}
+    },
+    {
+      "alias": "prompt-passkey-enrollment",
+      "name": "Prompt passkey enrollment",
+      "providerId": "prompt-passkey-enrollment",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 1004,
+      "config": {}
     }
   ],
   "browserFlow": "browser custom",

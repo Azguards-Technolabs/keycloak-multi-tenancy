@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-23  # story 5-4 → done (code review)
+last_updated: 2026-06-25  # story 6-1 done (code review)
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system
@@ -97,3 +97,8 @@ development_status:
   5-3-multi-invite-picker: done
   5-4-non-blocking-async-user-service-sync-retry-banner: done
   epic-5-retrospective: optional
+
+  # Epic 6: Auth Screen Mockup Parity
+  epic-6: done
+  6-1-auth-screen-mockup-parity: done
+  epic-6-retrospective: optional

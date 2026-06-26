@@ -383,8 +383,8 @@ Available from `components.css` (verified prior stories):
 ### What Is Explicitly Out of Scope for Story 3.3
 
 - **Post-login enrollment prompt** — Story 3.4
-- **Any modification to `register.ftl`, `login-oauth-grant.ftl`, `email/` templates, admin tenant switcher** — AR-OOS
-- **Passwordless WebAuthn flow** (`webauthn-authenticator-passwordless`) — not in scope for this epic
+- **Any modification to `register.ftl`, `login-oauth-grant.ftl`, `email/` templates, admin switcher** — AR-OOS
+- **Passwordless WebAuthn flow** — **in scope (2026-06-25):** register page auto-start complements AIA skip; see `epic-3-passkey-runtime-model.md`
 - **i18n for non-English locales** — broader i18n pass (existing pattern)
 - **SRI / self-hosting the brand logo** — pre-existing deferred item from Story 3.1 review (cross-project concern)
 - **Empty `webAuthnPolicyRpId` multi-hostname passkey validation issue** — deferred from Story 3.2 review; depends on deployment hostname strategy finalization
@@ -403,6 +403,7 @@ Available from `components.css` (verified prior stories):
 - Deferred work: `_bmad-output/implementation-artifacts/deferred-work.md`
   - Stories 3.1 + 3.2 deferrals — all WebAuthn feature-detect issues are owned by this story
 - Sprint status: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- **`epic-3-passkey-runtime-model.md`** — passwordless runtime model, enrollment UX (2026-06-25)
 - `login.ftl` (current): `azguards-keycloak-custom-theme/.../login/login.ftl` — 297 lines; passkey section at ~lines 284–292
 - `webauthn-authenticate.ftl` (current): `azguards-keycloak-custom-theme/.../login/webauthn-authenticate.ftl` — 175 lines; IIFE at lines 75–171
 - `webauthn-register.ftl` (current): `azguards-keycloak-custom-theme/.../login/webauthn-register.ftl` — 224 lines; IIFE at lines 77–220
@@ -447,3 +448,4 @@ None — all tasks completed without errors.
 ### Change Log
 
 - 2026-06-15: Story 3.3 implemented — graceful passkey fallback & degradation. Added 2 i18n keys (Repo 1). Updated login.ftl, webauthn-authenticate.ftl, webauthn-register.ftl with WebAuthn feature-detect guards and announce→redirect fallback pattern (Repo 2). Both repos BUILD SUCCESS.
+- 2026-06-25: Register-page **State C auto-start** (Story 3.1/3.4) — first-load enrollment hides duplicate buttons and opens OS dialog immediately; complements AIA `cancel-aia` skip. Documented in `epic-3-passkey-runtime-model.md`.

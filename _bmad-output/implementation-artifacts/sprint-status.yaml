@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-25  # story 6-1 done (code review)
+last_updated: 2026-06-25  # epic-3 passkey runtime model + enrollment UX docs
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system

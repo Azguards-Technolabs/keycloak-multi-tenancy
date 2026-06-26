@@ -100,7 +100,7 @@ public class ApiIntegrationTest extends BaseIntegrationTest {
                 .fillCredentials(user.getUserData().getEmail(), user.getUserData().getPassword())
                 .signIn();
         assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
-        ((ReviewInvitationsPage) nextPage).accept();
+        ((ReviewInvitationsPage) nextPage).acceptInvitation(tenant.getName()).proceed();
 
         var userMembership = tenantResource.memberships().listMemberships(user.getUserData().getEmail(), null, null).stream()
                 .filter(membership -> membership.getUser().getEmail().equalsIgnoreCase(user.getUserData().getEmail()))

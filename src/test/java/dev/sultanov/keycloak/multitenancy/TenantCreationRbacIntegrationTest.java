@@ -35,6 +35,9 @@ public class TenantCreationRbacIntegrationTest extends BaseIntegrationTest {
         // when
         var tenantRepresentation = new TenantRepresentation();
         tenantRepresentation.setName("Tenant-" + UUID.randomUUID());
+        tenantRepresentation.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRepresentation.setCountryCode("91");
+        tenantRepresentation.setStatus("ACTIVE");
         try (var response = user.tenantsResource().createTenant(tenantRepresentation)) {
 
             // then
@@ -54,6 +57,9 @@ public class TenantCreationRbacIntegrationTest extends BaseIntegrationTest {
         // when
         var tenantRepresentation = new TenantRepresentation();
         tenantRepresentation.setName("Tenant-" + UUID.randomUUID());
+        tenantRepresentation.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRepresentation.setCountryCode("91");
+        tenantRepresentation.setStatus("ACTIVE");
         try (var response = user.tenantsResource().createTenant(tenantRepresentation)) {
 
             // then
@@ -72,6 +78,9 @@ public class TenantCreationRbacIntegrationTest extends BaseIntegrationTest {
         // when
         var tenantRepresentation = new TenantRepresentation();
         tenantRepresentation.setName("Tenant-" + UUID.randomUUID());
+        tenantRepresentation.setMobileNumber(String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
+        tenantRepresentation.setCountryCode("91");
+        tenantRepresentation.setStatus("ACTIVE");
         try (var response = user.tenantsResource().createTenant(tenantRepresentation)) {
 
             // then

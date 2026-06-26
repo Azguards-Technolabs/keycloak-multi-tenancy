@@ -1,5 +1,6 @@
 package dev.sultanov.keycloak.multitenancy.support.browser;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
@@ -9,13 +10,34 @@ public class ReviewInvitationsPage extends AbstractPage {
         super(page);
     }
 
-    public ReviewInvitationsPage uncheckInvitation(String tenantName) {
-        page.getByLabel(tenantName).uncheck();
+    public ReviewInvitationsPage acceptInvitation(String tenantName) {
+        page.locator(".tenant-invitation-card", new Page.LocatorOptions().setHasText(tenantName))
+                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Accept"))
+                .click();
         return this;
     }
 
-    public AbstractPage accept() {
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accept")).click();
+    public ReviewInvitationsPage rejectInvitation(String tenantName) {
+        page.locator(".tenant-invitation-card", new Page.LocatorOptions().setHasText(tenantName))
+                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Reject"))
+                .click();
+        return this;
+    }
+
+    public AbstractPage proceed() {
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Go to Dashboard")).click();
         return PageResolver.resolve(page);
     }
+
+
+    @Deprecated
+    public ReviewInvitationsPage uncheckInvitation(String tenantName) {
+        return rejectInvitation(tenantName);
+    }
+
+    @Deprecated
+    public AbstractPage accept() {
+        return proceed();
+    }
 }
+

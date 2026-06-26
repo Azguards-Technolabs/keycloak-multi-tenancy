@@ -385,16 +385,16 @@
     "totpAppMicrosoftAuthenticatorName"
   ],
   "localizationTexts": {},
-  "webAuthnPolicyRpEntityName": "keycloak",
+  "webAuthnPolicyRpEntityName": "WhataTalk",
   "webAuthnPolicySignatureAlgorithms": [
     "ES256"
   ],
   "webAuthnPolicyRpId": "",
   "webAuthnPolicyAttestationConveyancePreference": "not specified",
   "webAuthnPolicyAuthenticatorAttachment": "not specified",
-  "webAuthnPolicyRequireResidentKey": "not specified",
-  "webAuthnPolicyUserVerificationRequirement": "not specified",
-  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyRequireResidentKey": "required",
+  "webAuthnPolicyUserVerificationRequirement": "required",
+  "webAuthnPolicyCreateTimeout": 60,
   "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyAcceptableAaguids": [],
   "webAuthnPolicyExtraOrigins": [],
@@ -1924,6 +1924,14 @@
           "priority": 31,
           "autheticatorFlow": false,
           "userSetupAllowed": false
+        },
+        {
+          "authenticator": "webauthn-authenticator-passwordless",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 32,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
         }
       ]
     },
@@ -2493,6 +2501,15 @@
       "enabled": true,
       "defaultAction": false,
       "priority": 1003,
+      "config": {}
+    },
+    {
+      "alias": "prompt-passkey-enrollment",
+      "name": "Prompt passkey enrollment",
+      "providerId": "prompt-passkey-enrollment",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 1004,
       "config": {}
     }
   ],

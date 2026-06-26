@@ -2,6 +2,121 @@
   "openapi" : "3.1.0",
   "components" : {
     "schemas" : {
+      "CredentialRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "userLabel" : {
+            "type" : "string"
+          },
+          "createdDate" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "secretData" : {
+            "type" : "string"
+          },
+          "credentialData" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "temporary" : {
+            "type" : "boolean"
+          },
+          "device" : {
+            "type" : "string",
+            "deprecated" : true
+          },
+          "hashedSaltedValue" : {
+            "type" : "string",
+            "deprecated" : true
+          },
+          "salt" : {
+            "type" : "string",
+            "deprecated" : true
+          },
+          "hashIterations" : {
+            "type" : "integer",
+            "format" : "int32",
+            "deprecated" : true
+          },
+          "counter" : {
+            "type" : "integer",
+            "format" : "int32",
+            "deprecated" : true
+          },
+          "algorithm" : {
+            "type" : "string",
+            "deprecated" : true
+          },
+          "digits" : {
+            "type" : "integer",
+            "format" : "int32",
+            "deprecated" : true
+          },
+          "period" : {
+            "type" : "integer",
+            "format" : "int32",
+            "deprecated" : true
+          },
+          "config" : {
+            "type" : "object",
+            "deprecated" : true,
+            "$ref" : "#/components/schemas/MultivaluedHashMapStringString"
+          },
+          "federationLink" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FederatedIdentityRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "identityProvider" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "type" : "string"
+          },
+          "userName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MultivaluedHashMapStringString" : {
+        "type" : "object",
+        "additionalProperties" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SocialLinkRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "socialProvider" : {
+            "type" : "string"
+          },
+          "socialUserId" : {
+            "type" : "string"
+          },
+          "socialUsername" : {
+            "type" : "string"
+          }
+        }
+      },
       "TenantInvitationRepresentation" : {
         "type" : "object",
         "properties" : {
@@ -41,8 +156,8 @@
             "readOnly" : true
           },
           "user" : {
-            "type" : "object",
             "readOnly" : true,
+            "type" : "object",
             "properties" : {
               "id" : {
                 "type" : "string"
@@ -71,7 +186,8 @@
               "federationLink" : {
                 "type" : "string"
               }
-            }
+            },
+            "$ref" : "#/components/schemas/UserRepresentation"
           },
           "roles" : {
             "type" : "array",
@@ -122,6 +238,35 @@
         },
         "required" : [ "name" ]
       },
+      "UserConsentRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string"
+          },
+          "grantedClientScopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "createdDate" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastUpdatedDate" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "grantedRealmRoles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "deprecated" : true
+          }
+        }
+      },
       "UserMembershipRepresentation" : {
         "type" : "object",
         "properties" : {
@@ -135,6 +280,214 @@
             "type" : "array",
             "items" : {
               "type" : "string"
+            }
+          }
+        }
+      },
+      "UserProfileAttributeGroupMetadata" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "displayHeader" : {
+            "type" : "string"
+          },
+          "displayDescription" : {
+            "type" : "string"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          }
+        }
+      },
+      "UserProfileAttributeMetadata" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "validators" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "additionalProperties" : { }
+            }
+          },
+          "group" : {
+            "type" : "string"
+          },
+          "multivalued" : {
+            "type" : "boolean"
+          },
+          "defaultValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UserProfileMetadata" : {
+        "type" : "object",
+        "properties" : {
+          "attributes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserProfileAttributeMetadata"
+            }
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserProfileAttributeGroupMetadata"
+            }
+          }
+        }
+      },
+      "UserRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
+          },
+          "attributes" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "userProfileMetadata" : {
+            "$ref" : "#/components/schemas/UserProfileMetadata"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "self" : {
+            "type" : "string"
+          },
+          "origin" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totp" : {
+            "type" : "boolean"
+          },
+          "federationLink" : {
+            "type" : "string"
+          },
+          "serviceAccountClientId" : {
+            "type" : "string"
+          },
+          "credentials" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CredentialRepresentation"
+            }
+          },
+          "disableableCredentialTypes" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "requiredActions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "federatedIdentities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FederatedIdentityRepresentation"
+            }
+          },
+          "realmRoles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "clientRoles" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "clientConsents" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserConsentRepresentation"
+            }
+          },
+          "notBefore" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "applicationRoles" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            },
+            "deprecated" : true
+          },
+          "socialLinks" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SocialLinkRepresentation"
+            },
+            "deprecated" : true
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "access" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "boolean"
             }
           }
         }
@@ -154,8 +507,38 @@
             "type" : "string"
           }
         }, {
+          "description" : "Pagination offset",
+          "name" : "first",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "description" : "Maximum results size",
+          "name" : "max",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
           "description" : "Tenant mobile number (exact match)",
           "name" : "mobileNumber",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Attribute query (e.g. key:value)",
+          "name" : "q",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Search query for name or ID",
+          "name" : "search",
           "in" : "query",
           "schema" : {
             "type" : "string"
@@ -672,7 +1055,7 @@
   },
   "info" : {
     "title" : "Keycloak Multi-Tenancy",
-    "version" : "26.4.1"
+    "version" : "26.6.3"
   },
   "servers" : [ {
     "url" : "{{keycloakUrl}}/auth/realms/{{realmName}}"

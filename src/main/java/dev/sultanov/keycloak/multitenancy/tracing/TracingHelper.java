@@ -42,7 +42,8 @@ public final class TracingHelper {
             return;
         }
         if (ObjectUtils.isNotEmpty(error)) {
-            span.tag("error", error.getMessage());
+            String msg = error.getMessage();
+            span.tag("error", msg != null ? msg : error.getClass().getName());
         }
         span.finish();
     }

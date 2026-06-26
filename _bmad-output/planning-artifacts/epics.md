@@ -854,3 +854,38 @@ So that a downstream outage never blocks me at the door.
 **Then** the sync is re-attempted in the background without blocking
 
 > **Open question (OQ-3):** the User-Service SLA informing retry-backoff timing is unresolved. The 3×/30s values are assumptions — confirm before implementing this story.
+
+---
+
+## Epic 6: Auth Screen Mockup Parity
+
+Align the three shipped auth screens with the June 2026 HTML mockups (`screen-login.html`, `screen-select-account.html`, `screen-invite-accepted.html`) while keeping the Epic 1 token/component CSS architecture (`tokens.css`, `components.css`, screen-specific CSS).
+
+### Story 6.1: Login, Select Account & Invite Accepted mockup parity
+
+As an Agent signing in or onboarding,
+I want the login, account picker, and invite-accepted screens to match the approved mockups,
+So that the auth experience feels consistent with the WhataTalk product design.
+
+> **Working Repositories:** Two repos — complete in order:
+> 1. `keycloak-multi-tenancy` — present `invite-accepted.ftl` challenge after single-invite auto-accept; handle `proceed` / `decline` in `ReviewTenantInvitations.processAction`.
+> 2. `azguards-keycloak-custom-theme` — align `login.ftl`, `select-tenant.ftl`, and new `invite-accepted.ftl` with mockup layout, typography, spacing, and components.
+
+**Acceptance Criteria:**
+
+**Given** the login screen
+**When** it renders
+**Then** it matches `screen-login.html`: mint background, CSS wordmark, 400px wrap, card padding 30/28/26px, title + subtitle, dashed passkey row above password, inline credential error, Login + outline Create New Business + Forgot Password inside the card (UX mockup 2026-06-11)
+
+**Given** the select-account screen
+**When** it renders
+**Then** it matches `screen-select-account.html`: brand wordmark, subtitle, always-visible search, 42px avatar rows with chevron, inline "Last used" tag, 2px pinned border on last-used row, `Roles:` prefix
+
+**Given** a single pending invitation auto-accepts
+**When** `ReviewTenantInvitations` completes membership grant
+**Then** `invite-accepted.ftl` is shown matching `screen-invite-accepted.html` (toast + success card, account pill, Go to account, Not you? Decline) — no blank screen (FR-INV-7)
+
+**Given** the invite-accepted screen
+**When** the Agent taps Go to account or Not you? Decline
+**Then** proceed continues login; decline revokes membership, logs out, and returns to login (FR-INV-8)
+

@@ -20,6 +20,8 @@ import java.util.Set;
 @Table(name = "TENANT_INVITATION", uniqueConstraints = {@UniqueConstraint(columnNames = {"TENANT_ID", "EMAIL"})})
 @NamedQuery(name = "getInvitationsByRealmAndEmail",
         query = "SELECT i FROM TenantInvitationEntity i WHERE i.tenant in (SELECT o FROM TenantEntity o WHERE o.realmId = :realmId) AND lower(i.email) = lower(:search)")
+@NamedQuery(name = "getInvitationById",
+        query = "SELECT i FROM TenantInvitationEntity i WHERE i.id = :id AND i.tenant in (SELECT o FROM TenantEntity o WHERE o.realmId = :realmId)")
 public class TenantInvitationEntity {
 
     @Id

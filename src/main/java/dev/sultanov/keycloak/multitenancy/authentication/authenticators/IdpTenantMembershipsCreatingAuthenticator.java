@@ -18,28 +18,47 @@ import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import brave.Span;
+import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 
 @JBossLog
 public class IdpTenantMembershipsCreatingAuthenticator implements Authenticator {
 
     public void authenticate(AuthenticationFlowContext context) {
-        var authSession = context.getAuthenticationSession();
+        Span span = TracingHelper.startServerSpan("idp-memberships.authenticate");
+        Throwable traceError = null;
+        try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
+            var authSession = context.getAuthenticationSession();
 
-        var firstLoginCtx = SerializedBrokeredIdentityContext.readFromAuthenticationSession(authSession, AbstractIdpAuthenticator.BROKERED_CONTEXT_NOTE);
-        var postLoginCtx = SerializedBrokeredIdentityContext.readFromAuthenticationSession(authSession, PostBrokerLoginConstants.PBL_BROKERED_IDENTITY_CONTEXT);
-        var serializedCtx = Optional.ofNullable(firstLoginCtx).orElse(postLoginCtx);
+            var firstLoginCtx = SerializedBrokeredIdentityContext.readFromAuthenticationSession(authSession, AbstractIdpAuthenticator.BROKERED_CONTEXT_NOTE);
+            var postLoginCtx = SerializedBrokeredIdentityContext.readFromAuthenticationSession(authSession, PostBrokerLoginConstants.PBL_BROKERED_IDENTITY_CONTEXT);
+            var serializedCtx = Optional.ofNullable(firstLoginCtx).orElse(postLoginCtx);
 
-        if (serializedCtx == null) {
-            throw new AuthenticationFlowException("Not found serialized context in clientSession", AuthenticationFlowError.IDENTITY_PROVIDER_ERROR);
-        } else {
-            BrokeredIdentityContext brokerContext = serializedCtx.deserialize(context.getSession(), authSession);
-            if (!brokerContext.getIdpConfig().isEnabled()) {
-                context.getEvent().user(context.getUser()).error("identity_provider_error");
-                var challengeResponse = context.form().setError("identityProviderUnexpectedErrorMessage").createErrorPage(Status.BAD_REQUEST);
-                context.failureChallenge(AuthenticationFlowError.IDENTITY_PROVIDER_ERROR, challengeResponse);
+            if (context.getUser() != null) {
+                span.tag("user.id", context.getUser().getId());
             }
+            if (serializedCtx == null) {
+                throw new AuthenticationFlowException("Not found serialized context in clientSession", AuthenticationFlowError.IDENTITY_PROVIDER_ERROR);
+            } else {
+                BrokeredIdentityContext brokerContext = serializedCtx.deserialize(context.getSession(), authSession);
+                var idpConfig = brokerContext.getIdpConfig();
+                if (idpConfig != null && idpConfig.getAlias() != null) {
+                    span.tag("idp.alias", idpConfig.getAlias());
+                }
+                if (idpConfig == null || !idpConfig.isEnabled()) {
+                    context.getEvent().user(context.getUser()).error("identity_provider_error");
+                    var challengeResponse = context.form().setError("identityProviderUnexpectedErrorMessage").createErrorPage(Status.BAD_REQUEST);
+                    context.failureChallenge(AuthenticationFlowError.IDENTITY_PROVIDER_ERROR, challengeResponse);
+                    return;
+                }
 
-            this.doAuthenticate(context, brokerContext);
+                this.doAuthenticate(context, brokerContext);
+            }
+        } catch (Exception ex) {
+            traceError = ex;
+            throw ex;
+        } finally {
+            TracingHelper.finishSpan(span, traceError);
         }
     }
 

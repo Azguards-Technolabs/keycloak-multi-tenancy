@@ -75,6 +75,11 @@ public class TenantResource extends AbstractAdminResource<TenantAdminAuth> {
         try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
             span.tag("tenant.id", tenant.getId());
             if (ObjectUtils.isNotEmpty(request.getName())) {
+                boolean nameExists = tenantProvider.getTenantsStream(realm, null, null, null, null)
+                        .anyMatch(t -> t.getName().equalsIgnoreCase(request.getName()) && !t.getId().equals(tenant.getId()));
+                if (nameExists) {
+                    return Response.status(Response.Status.CONFLICT).entity("A tenant with this name already exists.").build();
+                }
                 tenant.setName(request.getName());
             }
             if (ObjectUtils.isNotEmpty(request.getMobileNumber())) {
@@ -87,7 +92,7 @@ public class TenantResource extends AbstractAdminResource<TenantAdminAuth> {
                 tenant.setStatus(request.getStatus());
             }
 
-            if (ObjectUtils.isNotEmpty(request.getAttributes())) {
+            if (request.getAttributes() != null) {
                 Set<String> attrsToRemove = new HashSet<>(tenant.getAttributes().keySet());
                 attrsToRemove.removeAll(request.getAttributes().keySet());
 

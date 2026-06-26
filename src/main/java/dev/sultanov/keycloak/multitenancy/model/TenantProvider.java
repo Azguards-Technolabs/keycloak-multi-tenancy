@@ -23,6 +23,8 @@ public interface TenantProvider extends Provider {
 
     Stream<TenantInvitationModel> getTenantInvitationsStream(RealmModel realm, UserModel user);
 
+    Optional<TenantInvitationModel> findInvitationById(RealmModel realm, String id);
+
     Stream<TenantMembershipModel> getTenantMembershipsStream(RealmModel realm, UserModel user);
 
     Stream<TenantModel> getUserTenantsStream(RealmModel realm, UserModel user);

@@ -1055,7 +1055,7 @@
   },
   "info" : {
     "title" : "Keycloak Multi-Tenancy",
-    "version" : "26.6.3"
+    "version" : "26.6.4"
   },
   "servers" : [ {
     "url" : "{{keycloakUrl}}/auth/realms/{{realmName}}"

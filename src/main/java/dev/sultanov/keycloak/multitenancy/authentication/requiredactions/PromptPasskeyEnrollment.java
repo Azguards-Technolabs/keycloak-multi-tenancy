@@ -4,6 +4,7 @@ import org.keycloak.Config;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionFactory;
 import org.keycloak.authentication.RequiredActionProvider;
+import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import lombok.extern.jbosslog.JBossLog;
@@ -14,6 +15,11 @@ import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 public class PromptPasskeyEnrollment implements RequiredActionProvider, RequiredActionFactory {
 
     public static final String ID = "prompt-passkey-enrollment";
+    /** Per-login choice stored on the auth session. */
+    private static final String ENROLLMENT_CHOICE_NOTE = "passkey-enrollment-choice";
+    /** Form field — avoid name="action" (collides with KC required-action URL handling). */
+    static final String ENROLLMENT_CHOICE_PARAM = "enrollmentChoice";
+    private static final String WEBAUTHN_REGISTER_PASSWORDLESS = "webauthn-register-passwordless";
 
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
@@ -46,6 +52,13 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
 
             if (hasPasskey) {
                 log.debugf("User %s already has a passkey — skipping enrollment prompt", user.getId());
+                return;
+            }
+
+            var authSession = context.getAuthenticationSession();
+            var choice = authSession.getAuthNote(ENROLLMENT_CHOICE_NOTE);
+            if ("enroll".equals(choice) || "dismiss".equals(choice)) {
+                log.debugf("User %s already chose '%s' this login — skipping enrollment prompt", user.getId(), choice);
                 return;
             }
 
@@ -100,16 +113,29 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             }
             span.tag("user.id", user.getId());
             var formData = context.getHttpRequest().getDecodedFormParameters();
-            String action = formData.getFirst("action");
-            log.infof("Processing passkey enrollment action '%s' for user: %s", action, user.getId());
+            String choice = formData.getFirst(ENROLLMENT_CHOICE_PARAM);
+            log.infof("Processing passkey enrollment choice '%s' for user: %s", choice, user.getId());
 
-            if ("enroll".equals(action)) {
+            var authSession = context.getAuthenticationSession();
+            if ("enroll".equals(choice)) {
                 log.infof("User %s chose to enroll a passkey — routing to webauthn-register-passwordless", user.getId());
-                user.addRequiredAction("webauthn-register-passwordless");
+                authSession.setAuthNote(ENROLLMENT_CHOICE_NOTE, "enroll");
+                // Treat as optional (skippable) app-initiated registration — allows "Not now" on
+                // webauthn-register.ftl via cancel-aia without persisting a mandatory user action.
+                authSession.setClientNote(Constants.KC_ACTION, WEBAUTHN_REGISTER_PASSWORDLESS);
+                authSession.setClientNote(Constants.KC_ACTION_EXECUTING, WEBAUTHN_REGISTER_PASSWORDLESS);
+                authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
+                authSession.addRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
+                user.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
                 context.success();
             } else {
-                // "dismiss" or any other/null value — per-session dismiss (OQ-8 Option A)
                 log.debugf("User %s dismissed the enrollment prompt — proceeding without passkey", user.getId());
+                authSession.setAuthNote(ENROLLMENT_CHOICE_NOTE, "dismiss");
+                authSession.removeClientNote(Constants.KC_ACTION);
+                authSession.removeClientNote(Constants.KC_ACTION_EXECUTING);
+                authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
+                user.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
+                user.removeRequiredAction(ID);
                 context.success();
             }
         } catch (Exception ex) {

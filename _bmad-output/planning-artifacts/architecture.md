@@ -130,7 +130,7 @@ change is the platform upgrade required to unlock native passkeys.
 - **Persistence:** Keycloak JPA entity provider (Tenant/Membership/Invitation/Attribute) — unchanged.
 - **Presentation:** FreeMarker theme-resources + messages bundles; new shared CSS design-token file.
 - **Extension points in play:** RequiredActionProvider, AuthenticatorFactory, ProtocolMapper, JPA
-  entity provider, RealmResourceProvider, WebAuthn SPI (new, 26.4+).
+  entity provider, RealmResourceProvider, WebAuthn SPI (new, 26.4+). **Passkey runtime (2026-06-25):** passwordless providers (`webauthn-authenticator-passwordless`, `webauthn-register-passwordless`); see `_bmad-output/implementation-artifacts/epic-3-passkey-runtime-model.md`.
 - **Observability:** existing Zipkin/Brave tracing via TracingHelper.
 - **Testing:** JUnit5 + Testcontainers (Keycloak) + Playwright + Mailhog — existing harness extended.
 

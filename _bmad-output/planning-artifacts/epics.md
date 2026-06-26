@@ -121,7 +121,7 @@ _From Architecture + Technical Addendum — technical/infrastructure requirement
 - **AR-1 (ENABLING PREREQUISITE — must land first):** Upgrade Keycloak runtime 26.0.7 → 26.4.x (latest 26.4.6) for native passkeys SPI. Full replacement (single-node auth model), maintenance window, documented rollback. *(No greenfield starter template applies — brownfield fork.)*
 - **AR-2:** Recompile the `anarsultanov/keycloak-multi-tenancy` extension fork against KC 26.4.x APIs; verify `AuthenticatorFactory`, `RequiredActionProvider`, `ProtocolMapper`, and FreeMarker theme-resolution order for breaking changes. Validate in staging with production-equivalent data volume.
 - **AR-3:** Confirm extension ↔ Keycloak version compatibility before production by running full login + invite flows in staging.
-- **AR-4:** Integrate the WebAuthn SPI (`webauthn-register` / `webauthn-authenticate` required actions, `WebAuthnAuthenticator`) bound to the username credential.
+- **AR-4:** Integrate the WebAuthn SPI for username-bound passkeys. **Runtime (2026-06-25):** use KC's **passwordless** providers — `webauthn-authenticator-passwordless` in the browser flow, `webauthn-register-passwordless` for enrollment, credentials stored as `webauthn-passwordless`. Custom `webauthn-register.ftl` / `webauthn-authenticate.ftl` theme templates. See `epic-3-passkey-runtime-model.md`.
 - **AR-5:** Add a new optional `MagicLinkAuthenticator` that gates on `emailVerified`, exposed as a conditional step in the browser flow.
 - **AR-6:** Add an invite-link verification endpoint that sets `emailVerified = true` at link-click time (not post-login).
 - **AR-7:** Modify `review-tenant-invitations` required action for the auto-accept-single-invite path (render toast confirmation, not the list).
@@ -587,7 +587,7 @@ I want to sign in with my passkey as the primary option,
 So that I authenticate in one tap without typing a password.
 
 > **Working Repositories:** Two repos touched in this story — complete in order:
-> 1. `keycloak-multi-tenancy` — wire `webauthn-authenticate` into the browser flow against the KC 26.4+ SPI (AR-4). Ensure `passkey-registered` flag is exposed to the FTL context.
+> 1. `keycloak-multi-tenancy` — wire **`webauthn-authenticator-passwordless`** into the browser flow against the KC 26.4+ SPI (AR-4). Set `passkeyAuthExecId` in theme properties to the passwordless execution UUID.
 > 2. `azguards-keycloak-custom-theme` — update `webauthn-authenticate.ftl` with Epic 1 tokens/components and the passkey-first affordance above the password field.
 
 **Acceptance Criteria:**
@@ -646,7 +646,7 @@ So that I can opt into faster sign-in next time.
 
 **Given** the Agent accepts
 **When** they proceed
-**Then** they enter the registration flow (Story 3.1)
+**Then** they enter the registration flow (Story 3.1) — the OS passkey dialog opens immediately (no second "Set up passkey" screen); see `epic-3-passkey-runtime-model.md`
 
 > **Open question (OQ-8):** show the enrollment prompt on every login until dismissed, or only once with a persisted "don't show again"? Current AC assumes dismissible-per-session — confirm before dev.
 

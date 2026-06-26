@@ -62,15 +62,16 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
                 return;
             }
 
-            boolean alreadyQueued = user.getRequiredActionsStream()
-                    .anyMatch(a -> ID.equals(a));
-            if (alreadyQueued) {
-                log.debugf("User %s already has prompt-passkey-enrollment queued — skipping duplicate add", user.getId());
+            if (authSession.getRequiredActions().contains(ID)) {
+                log.debugf("User %s already has %s on auth session — skipping duplicate queue", user.getId(), ID);
                 return;
             }
 
-            log.infof("User %s has no passkey — adding required action: %s", user.getId(), ID);
-            user.addRequiredAction(ID);
+            // Drop stale user-level copies from older extension builds (caused Not now → prompt loop).
+            user.removeRequiredAction(ID);
+
+            log.infof("User %s has no passkey — queueing %s on auth session", user.getId(), ID);
+            authSession.addRequiredAction(ID);
         } catch (Exception ex) {
             traceError = ex;
             throw ex;
@@ -114,6 +115,10 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             span.tag("user.id", user.getId());
             var formData = context.getHttpRequest().getDecodedFormParameters();
             String choice = formData.getFirst(ENROLLMENT_CHOICE_PARAM);
+            if (choice == null || choice.isBlank()) {
+                // Backward compat: older theme FTLs posted name="action".
+                choice = formData.getFirst("action");
+            }
             log.infof("Processing passkey enrollment choice '%s' for user: %s", choice, user.getId());
 
             var authSession = context.getAuthenticationSession();
@@ -127,13 +132,17 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
                 authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
                 authSession.addRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
                 user.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
+                authSession.removeRequiredAction(ID);
+                user.removeRequiredAction(ID);
                 context.success();
             } else {
-                log.debugf("User %s dismissed the enrollment prompt — proceeding without passkey", user.getId());
+                log.infof("User %s dismissed the enrollment prompt — proceeding without passkey", user.getId());
                 authSession.setAuthNote(ENROLLMENT_CHOICE_NOTE, "dismiss");
                 authSession.removeClientNote(Constants.KC_ACTION);
                 authSession.removeClientNote(Constants.KC_ACTION_EXECUTING);
                 authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
+                authSession.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
+                authSession.removeRequiredAction(ID);
                 user.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
                 user.removeRequiredAction(ID);
                 context.success();

@@ -18,9 +18,11 @@ import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 public class PromptPasskeyEnrollment implements RequiredActionProvider, RequiredActionFactory {
 
     public static final String ID = "prompt-passkey-enrollment";
-    /** Per-login choice — stored as user-session note (see {@link dev.sultanov.keycloak.multitenancy.util.Constants#PASSKEY_ENROLLMENT_CHOICE_NOTE}). */
+    /** Per-login choice — stored as auth note (see {@link dev.sultanov.keycloak.multitenancy.util.Constants#PASSKEY_ENROLLMENT_CHOICE_NOTE}). */
     private static final String ENROLLMENT_CHOICE_NOTE =
             dev.sultanov.keycloak.multitenancy.util.Constants.PASSKEY_ENROLLMENT_CHOICE_NOTE;
+    /** Persistent user attribute — set when user clicks "Not now" so the prompt is suppressed on future logins. */
+    static final String ENROLLMENT_DISMISSED_ATTR = "passkey-enrollment-dismissed";
     /** Form field — avoid name="action" (collides with KC required-action URL handling). */
     static final String ENROLLMENT_CHOICE_PARAM = "enrollmentChoice";
     private static final String WEBAUTHN_REGISTER_PASSWORDLESS = "webauthn-register-passwordless";
@@ -70,6 +72,16 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
                     .isPresent();
             if (hasPasskey) {
                 log.debugf("User %s already has a passkey — skipping enrollment prompt", user.getId());
+                // User enrolled a passkey — clear any stale dismissed attribute
+                user.removeAttribute(ENROLLMENT_DISMISSED_ATTR);
+                removePromptFromQueues(user, authSession);
+                return;
+            }
+
+            // Check if user previously dismissed ("Not now") — persist across logins
+            String dismissedAttr = user.getFirstAttribute(ENROLLMENT_DISMISSED_ATTR);
+            if ("true".equals(dismissedAttr)) {
+                log.infof("User %s previously dismissed passkey enrollment — not re-prompting", user.getId());
                 removePromptFromQueues(user, authSession);
                 return;
             }
@@ -184,6 +196,9 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
                 markPromptHandled(authSession);
                 clearKcActionClientNotes(authSession);
                 clearPasskeyEnrollmentFromQueues(user, authSession);
+                // Persist dismiss decision so the prompt is not shown again on next login
+                user.setSingleAttribute(ENROLLMENT_DISMISSED_ATTR, "true");
+                log.infof("User %s — passkey-enrollment-dismissed attribute set on user model", user.getId());
                 context.success();
             }
         } catch (Exception ex) {

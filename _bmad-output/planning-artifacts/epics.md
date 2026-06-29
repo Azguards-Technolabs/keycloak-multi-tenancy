@@ -643,6 +643,7 @@ So that I can opt into faster sign-in next time.
 **Given** the prompt
 **When** the Agent dismisses it
 **Then** the Agent proceeds into the product with no passkey created and is not blocked
+**And** the prompt is shown at most once per login ("Not now" → next step, e.g. tenant selection — see `epic-3-passkey-runtime-model.md`, extension 26.6.9+)
 
 **Given** the Agent accepts
 **When** they proceed

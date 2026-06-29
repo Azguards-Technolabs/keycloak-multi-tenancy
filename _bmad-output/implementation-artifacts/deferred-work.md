@@ -48,6 +48,7 @@
 
 - **Resolved — documented in `epic-3-passkey-runtime-model.md`:** Original Stories 3.1–3.4 specs assumed standard `webauthn` / `webauthn-register` / `webauthn-authenticator`. Runtime uses **passwordless** providers and credential type `webauthn-passwordless`. Story 5-2 review patch item ("PromptPasskeyEnrollment uses wrong credential type") is **closed** by this alignment.
 - **Resolved — duplicate enrollment screens:** `webauthn-register.ftl` auto-start on `!isSetRetry`; `PromptPasskeyEnrollment` uses `enrollmentChoice`, auth-session `passkey-enrollment-choice` note, and KC_ACTION skippable routing.
+- **Resolved — "Not now" showed passkey prompt twice (26.6.9):** Keycloak re-runs `evaluateTriggers` after every required action; per-login choice notes could be lost across redirects. Fix: triple-note persistence, auth-session-only queue, `LAST_PROCESSED_EXECUTION` guard, challenge short-circuit. See `epic-3-passkey-runtime-model.md`.
 - **Ops — theme filesystem override on Docker:** Partial `themes/azguards-whatsapp` on the host overrides the JAR and can break login UI; patch JAR or remove filesystem override. Documented in `epic-3-passkey-runtime-model.md` and `keycloak-identity-service/README.md`.
 
 ## Deferred from: code review of story-3.4 (2026-06-17)

@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-25  # epic-3 passkey runtime model + enrollment UX docs
+last_updated: 2026-06-29  # epic-3 passkey dismiss loop fix (26.6.9) + BMAD docs
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system

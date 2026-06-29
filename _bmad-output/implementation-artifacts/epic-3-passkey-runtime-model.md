@@ -2,6 +2,7 @@
 document_type: implementation-addendum
 epic: 3
 created: 2026-06-25
+last_updated: 2026-06-29
 status: authoritative-for-runtime
 supersedes_story_assumptions:
   - 3-1-username-bound-passkey-registration.md (standard webauthn-register only)
@@ -32,6 +33,19 @@ This document records **how passkeys actually run in dev/local/production** afte
 
 ## Post-login enrollment flow (Story 3.4 + 3.1)
 
+### Required-action order (realm priority)
+
+Lower priority number runs **first**. Typical post-login chain:
+
+| Priority | ID | When |
+|---:|---|---|
+| 1001 | `review-tenant-invitations` | Pending invites + verified email |
+| 1002 | `create-tenant` | Zero memberships |
+| 1003 | `select-active-tenant` | Multiple memberships (one → auto-select) |
+| 1004 | **`prompt-passkey-enrollment`** | No `webauthn-passwordless` credential |
+
+**"Not now"** must advance to the **next** step in this chain (or finish login) — **never** show the passkey prompt twice in the same login.
+
 ### Intended UX (one prompt, then OS dialog)
 
 1. **Prompt screen** (`passkey-enrollment-prompt.ftl`) — only place the Agent chooses:
@@ -50,10 +64,26 @@ This document records **how passkeys actually run in dev/local/production** afte
 |---|---|
 | Provider ID | `prompt-passkey-enrollment` |
 | Form field | **`enrollmentChoice`** (`enroll` \| `dismiss`) — **not** `action` (collides with KC required-action URL handling) |
-| Per-login session note | `passkey-enrollment-choice` = `enroll` or `dismiss` (prevents re-prompt loop in same login) |
+| Per-login choice note | **`passkey-enrollment-choice`** = `enroll` or `dismiss` — stored on **auth note**, **user-session note**, and **client note** (see `Constants.PASSKEY_ENROLLMENT_CHOICE_NOTE`) |
+| Anti–double-prompt guard | After `processAction`, KC sets auth note **`LAST_PROCESSED_EXECUTION`** = `prompt-passkey-enrollment`. `evaluateTriggers` and `requiredActionChallenge` **must not** re-queue or re-render if choice is set **or** `LAST_PROCESSED_EXECUTION` matches — heals missing choice notes as dismiss |
+| Queue target | **`authSession.addRequiredAction` only** (per-login); clear stale `user.addRequiredAction` entries on each `evaluateTriggers` |
 | Has-passkey check | `user.credentialManager().getStoredCredentialsByTypeStream("webauthn-passwordless")` |
-| On enroll | `authSession.addRequiredAction("webauthn-register-passwordless")`; set `KC_ACTION` / `KC_ACTION_EXECUTING` client notes; **do not** `user.addRequiredAction` (avoids mandatory re-registration on next login) |
-| On dismiss | Clear `KC_ACTION*` client notes; `user.removeRequiredAction(webauthn-register-passwordless)`; `context.success()` |
+| On enroll | `setEnrollmentChoice(enroll)`; `authSession.addRequiredAction("webauthn-register-passwordless")`; set `KC_ACTION` / `KC_ACTION_EXECUTING` client notes; remove prompt from queues; `context.success()` |
+| On dismiss | `setEnrollmentChoice(dismiss)`; clear `KC_ACTION*` client notes; clear prompt + passwordless from user and session queues; `context.success()` → next required action |
+
+### Why the prompt could appear twice (fixed in 26.6.9)
+
+Keycloak calls **`evaluateTriggers` on every required-action provider after each step completes** (`AuthenticationManager.nextActionAfterAuthentication`). If the dismiss note is lost across the redirect, the prompt was re-queued → second screen.
+
+**Fix (extension `26.6.9+`):** three layers — (1) `passkey-enrollment-choice` notes, (2) `LAST_PROCESSED_EXECUTION` short-circuit, (3) `requiredActionChallenge` immediate `success()` when already dismissed/completed.
+
+**Expected dev logs after "Not now" (single prompt):**
+```
+Processing passkey enrollment choice 'dismiss' ...
+User ... dismissed the enrollment prompt — proceeding without passkey
+User ... — passkey prompt already completed this login — not re-queuing
+```
+Must **not** see a second `queueing prompt-passkey-enrollment` in the same login.
 
 ### `webauthn-register.ftl` registration details
 
@@ -69,7 +99,8 @@ This document records **how passkeys actually run in dev/local/production** afte
 
 - **Theme JAR vs filesystem:** On Docker, a partial filesystem theme under `/opt/keycloak/themes/azguards-whatsapp` overrides the JAR and can break the UI. Prefer patching inside the provider JAR or removing the filesystem override. See `keycloak-identity-service/README.md`.
 - **`passkeyAuthExecId`:** Must be set per realm after deploy (UUID of the passwordless execution). `deploy-local.sh` / `setup-realm-auth.sh` automate this locally.
-- **Stuck users:** Admin → Users → remove **Webauthn Register Passwordless** from required user actions; delete duplicate passkey credentials if registration failed mid-flight.
+- **Stuck users:** Admin → Users → remove **Prompt passkey enrollment** and **Webauthn Register Passwordless** from required user actions; delete duplicate passkey credentials if registration failed mid-flight.
+- **Extension version:** Deploy **`keycloak-multi-tenancy` 26.6.9+** for the enrollment dismiss loop fix; theme JAR unchanged for this fix.
 - **Required action toggle:** **Prompt passkey enrollment** must be enabled in Realm → Authentication → Required actions.
 
 ## Story doc cross-reference
@@ -79,8 +110,9 @@ This document records **how passkeys actually run in dev/local/production** afte
 | 3.1 | FTL states A/B/**C** (auto-start); serves passwordless registration |
 | 3.2 | `webauthn-authenticator-passwordless` + `passkeyAuthExecId` |
 | 3.3 | Register-page auto-start is complementary to feature-detect / AIA skip |
-| 3.4 | `enrollmentChoice`, passwordless routing, revised AC #3 |
+| 3.4 | `enrollmentChoice`, passwordless routing, revised AC #3, **anti–double-prompt (26.6.9)** |
 
 ## Change log
 
+- **2026-06-29:** **Dismiss loop fix (26.6.9)** — documented required-action order; `LAST_PROCESSED_EXECUTION` guard + auth-session-only queue; expected logs; deploy note for 26.6.9+.
 - **2026-06-25:** Documented passwordless runtime model; one-screen enrollment UX (auto-start `webauthn-register.ftl`); `PromptPasskeyEnrollment` session-note and KC_ACTION routing; deployment notes from local/dev debugging.

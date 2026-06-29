@@ -1,6 +1,7 @@
 package dev.sultanov.keycloak.multitenancy.authentication.requiredactions;
 
 import org.keycloak.Config;
+import org.keycloak.authentication.AuthenticationProcessor;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionFactory;
 import org.keycloak.authentication.RequiredActionProvider;
@@ -17,8 +18,9 @@ import dev.sultanov.keycloak.multitenancy.tracing.TracingHelper;
 public class PromptPasskeyEnrollment implements RequiredActionProvider, RequiredActionFactory {
 
     public static final String ID = "prompt-passkey-enrollment";
-    /** Per-login choice — client note survives required-action transitions (see ReviewTenantInvitations). */
-    private static final String ENROLLMENT_CHOICE_NOTE = "passkey-enrollment-choice";
+    /** Per-login choice — stored as user-session note (see {@link dev.sultanov.keycloak.multitenancy.util.Constants#PASSKEY_ENROLLMENT_CHOICE_NOTE}). */
+    private static final String ENROLLMENT_CHOICE_NOTE =
+            dev.sultanov.keycloak.multitenancy.util.Constants.PASSKEY_ENROLLMENT_CHOICE_NOTE;
     /** Form field — avoid name="action" (collides with KC required-action URL handling). */
     static final String ENROLLMENT_CHOICE_PARAM = "enrollmentChoice";
     private static final String WEBAUTHN_REGISTER_PASSWORDLESS = "webauthn-register-passwordless";
@@ -42,15 +44,23 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             span.tag("user.id", user.getId());
 
             var authSession = context.getAuthenticationSession();
+            clearStaleUserModelActions(user);
+
             var choice = getEnrollmentChoice(authSession);
             if ("dismiss".equals(choice)) {
-                log.debugf("User %s already dismissed passkey enrollment this login — clearing queues", user.getId());
+                log.infof("User %s already dismissed passkey enrollment this login — not re-queuing", user.getId());
                 clearPasskeyEnrollmentFromQueues(user, authSession);
                 return;
             }
             if ("enroll".equals(choice)) {
-                log.debugf("User %s already chose enroll this login — not re-queuing prompt", user.getId());
+                log.infof("User %s already chose passkey enrollment this login — not re-queuing prompt", user.getId());
                 removePromptFromQueues(user, authSession);
+                return;
+            }
+            if (wasPromptAlreadyHandled(authSession)) {
+                log.infof("User %s — passkey prompt already completed this login — not re-queuing", user.getId());
+                healMissingDismissChoice(authSession);
+                clearPasskeyEnrollmentFromQueues(user, authSession);
                 return;
             }
 
@@ -64,13 +74,13 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
                 return;
             }
 
-            if (isPromptQueued(user, authSession)) {
-                log.debugf("User %s already has %s queued — skipping duplicate add", user.getId(), ID);
+            if (isPromptQueued(authSession)) {
+                log.debugf("User %s already has %s queued on auth session — skipping duplicate add", user.getId(), ID);
                 return;
             }
 
-            log.infof("User %s has no passkey — adding required action: %s", user.getId(), ID);
-            user.addRequiredAction(ID);
+            log.infof("User %s has no passkey — queueing %s on auth session", user.getId(), ID);
+            authSession.addRequiredAction(ID);
         } catch (Exception ex) {
             traceError = ex;
             throw ex;
@@ -90,10 +100,24 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             }
             var authSession = context.getAuthenticationSession();
 
-            // If dismiss was already processed but KC still invoked this action, advance without re-rendering.
             if ("dismiss".equals(getEnrollmentChoice(authSession))) {
                 log.infof("Passkey enrollment already dismissed for user %s — skipping challenge",
                         user != null ? user.getId() : null);
+                clearPasskeyEnrollmentFromQueues(user, authSession);
+                context.success();
+                return;
+            }
+            if ("enroll".equals(getEnrollmentChoice(authSession))) {
+                log.infof("Passkey enrollment already accepted for user %s — skipping challenge",
+                        user != null ? user.getId() : null);
+                removePromptFromQueues(user, authSession);
+                context.success();
+                return;
+            }
+            if (wasPromptAlreadyHandled(authSession)) {
+                log.infof("Passkey prompt already completed for user %s — skipping challenge",
+                        user != null ? user.getId() : null);
+                healMissingDismissChoice(authSession);
                 clearPasskeyEnrollmentFromQueues(user, authSession);
                 context.success();
                 return;
@@ -147,6 +171,7 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             if ("enroll".equals(choice)) {
                 log.infof("User %s chose to enroll a passkey — routing to webauthn-register-passwordless", user.getId());
                 setEnrollmentChoice(authSession, "enroll");
+                markPromptHandled(authSession);
                 authSession.setClientNote(Constants.KC_ACTION, WEBAUTHN_REGISTER_PASSWORDLESS);
                 authSession.setClientNote(Constants.KC_ACTION_EXECUTING, WEBAUTHN_REGISTER_PASSWORDLESS);
                 authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
@@ -156,6 +181,7 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
             } else {
                 log.infof("User %s dismissed the enrollment prompt — proceeding without passkey", user.getId());
                 setEnrollmentChoice(authSession, "dismiss");
+                markPromptHandled(authSession);
                 clearKcActionClientNotes(authSession);
                 clearPasskeyEnrollmentFromQueues(user, authSession);
                 context.success();
@@ -168,22 +194,54 @@ public class PromptPasskeyEnrollment implements RequiredActionProvider, Required
         }
     }
 
+    /**
+     * Persists the per-login choice on user-session notes (survives KC re-running
+     * {@code evaluateTriggers} after each required action — see SelectActiveTenant).
+     */
     private static String getEnrollmentChoice(AuthenticationSessionModel authSession) {
-        String choice = authSession.getClientNote(ENROLLMENT_CHOICE_NOTE);
+        // Auth note is set in-process and is the most reliable during the same request.
+        String choice = authSession.getAuthNote(ENROLLMENT_CHOICE_NOTE);
         if (choice == null || choice.isBlank()) {
-            choice = authSession.getAuthNote(ENROLLMENT_CHOICE_NOTE);
+            var sessionNotes = authSession.getUserSessionNotes();
+            choice = sessionNotes != null
+                    ? sessionNotes.get(ENROLLMENT_CHOICE_NOTE)
+                    : null;
+        }
+        if (choice == null || choice.isBlank()) {
+            choice = authSession.getClientNote(ENROLLMENT_CHOICE_NOTE);
         }
         return choice;
     }
 
     private static void setEnrollmentChoice(AuthenticationSessionModel authSession, String choice) {
-        authSession.setClientNote(ENROLLMENT_CHOICE_NOTE, choice);
         authSession.setAuthNote(ENROLLMENT_CHOICE_NOTE, choice);
+        authSession.setUserSessionNote(ENROLLMENT_CHOICE_NOTE, choice);
+        authSession.setClientNote(ENROLLMENT_CHOICE_NOTE, choice);
     }
 
-    private static boolean isPromptQueued(UserModel user, AuthenticationSessionModel authSession) {
-        return user.getRequiredActionsStream().anyMatch(ID::equals)
-                || authSession.getRequiredActions().contains(ID);
+    /** KC sets this after processAction; survives when enrollment-choice notes do not. */
+    private static boolean wasPromptAlreadyHandled(AuthenticationSessionModel authSession) {
+        return ID.equals(authSession.getAuthNote(AuthenticationProcessor.LAST_PROCESSED_EXECUTION));
+    }
+
+    private static void markPromptHandled(AuthenticationSessionModel authSession) {
+        authSession.setAuthNote(AuthenticationProcessor.LAST_PROCESSED_EXECUTION, ID);
+    }
+
+    /** If KC recorded completion but choice notes were lost, treat as dismiss (no second prompt). */
+    private static void healMissingDismissChoice(AuthenticationSessionModel authSession) {
+        if (getEnrollmentChoice(authSession) == null) {
+            setEnrollmentChoice(authSession, "dismiss");
+        }
+    }
+
+    private static boolean isPromptQueued(AuthenticationSessionModel authSession) {
+        return authSession.getRequiredActions().contains(ID);
+    }
+
+    private static void clearStaleUserModelActions(UserModel user) {
+        user.removeRequiredAction(ID);
+        user.removeRequiredAction(WEBAUTHN_REGISTER_PASSWORDLESS);
     }
 
     private static void removePromptFromQueues(UserModel user, AuthenticationSessionModel authSession) {

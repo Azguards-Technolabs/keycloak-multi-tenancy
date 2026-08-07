@@ -25,6 +25,9 @@ public class BaseIntegrationTest {
             .withNetwork(network)
             .withNetworkAliases("keycloak")
             .withEnv("KC_LOGLEVEL", "DEBUG")
+            // EmailSender's kill switch defaults to disabled in production; the mail integration
+            // tests need it on to actually exercise delivery through the Mailhog container below.
+            .withEnv("KEYCLOAK_MULTITENANCY_EMAIL_ENABLED", "true")
             .withAccessToHost(true);
 
     private static final GenericContainer<?> mailhog = new GenericContainer<>("mailhog/mailhog")

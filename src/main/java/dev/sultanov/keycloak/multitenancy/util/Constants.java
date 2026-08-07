@@ -15,6 +15,9 @@ public class Constants {
     public static final String TOAST_TENANT_NAME_NOTE  = "toast.tenant.name";
     public static final String TOAST_TENANT_ID_NOTE    = "toast.tenant.id";
 
+    /** Per-login passkey prompt choice (dismiss | enroll) — survives required-action re-evaluation. */
+    public static final String PASSKEY_ENROLLMENT_CHOICE_NOTE = "passkey-enrollment-choice";
+
     public static final String USER_SERVICE_SYNC_RETRY_ATTR = "user-service-sync-retry-needed";
     public static final String USER_SERVICE_RETRY_LAST_ATTEMPT_ATTR = "user-service-retry-last-attempt";
 

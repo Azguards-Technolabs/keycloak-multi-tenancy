@@ -121,7 +121,7 @@ _From Architecture + Technical Addendum — technical/infrastructure requirement
 - **AR-1 (ENABLING PREREQUISITE — must land first):** Upgrade Keycloak runtime 26.0.7 → 26.4.x (latest 26.4.6) for native passkeys SPI. Full replacement (single-node auth model), maintenance window, documented rollback. *(No greenfield starter template applies — brownfield fork.)*
 - **AR-2:** Recompile the `anarsultanov/keycloak-multi-tenancy` extension fork against KC 26.4.x APIs; verify `AuthenticatorFactory`, `RequiredActionProvider`, `ProtocolMapper`, and FreeMarker theme-resolution order for breaking changes. Validate in staging with production-equivalent data volume.
 - **AR-3:** Confirm extension ↔ Keycloak version compatibility before production by running full login + invite flows in staging.
-- **AR-4:** Integrate the WebAuthn SPI (`webauthn-register` / `webauthn-authenticate` required actions, `WebAuthnAuthenticator`) bound to the username credential.
+- **AR-4:** Integrate the WebAuthn SPI for username-bound passkeys. **Runtime (2026-06-25):** use KC's **passwordless** providers — `webauthn-authenticator-passwordless` in the browser flow, `webauthn-register-passwordless` for enrollment, credentials stored as `webauthn-passwordless`. Custom `webauthn-register.ftl` / `webauthn-authenticate.ftl` theme templates. See `epic-3-passkey-runtime-model.md`.
 - **AR-5:** Add a new optional `MagicLinkAuthenticator` that gates on `emailVerified`, exposed as a conditional step in the browser flow.
 - **AR-6:** Add an invite-link verification endpoint that sets `emailVerified = true` at link-click time (not post-login).
 - **AR-7:** Modify `review-tenant-invitations` required action for the auto-accept-single-invite path (render toast confirmation, not the list).
@@ -587,7 +587,7 @@ I want to sign in with my passkey as the primary option,
 So that I authenticate in one tap without typing a password.
 
 > **Working Repositories:** Two repos touched in this story — complete in order:
-> 1. `keycloak-multi-tenancy` — wire `webauthn-authenticate` into the browser flow against the KC 26.4+ SPI (AR-4). Ensure `passkey-registered` flag is exposed to the FTL context.
+> 1. `keycloak-multi-tenancy` — wire **`webauthn-authenticator-passwordless`** into the browser flow against the KC 26.4+ SPI (AR-4). Set `passkeyAuthExecId` in theme properties to the passwordless execution UUID.
 > 2. `azguards-keycloak-custom-theme` — update `webauthn-authenticate.ftl` with Epic 1 tokens/components and the passkey-first affordance above the password field.
 
 **Acceptance Criteria:**
@@ -643,10 +643,11 @@ So that I can opt into faster sign-in next time.
 **Given** the prompt
 **When** the Agent dismisses it
 **Then** the Agent proceeds into the product with no passkey created and is not blocked
+**And** the prompt is shown at most once per login ("Not now" → next step, e.g. tenant selection — see `epic-3-passkey-runtime-model.md`, extension 26.6.9+)
 
 **Given** the Agent accepts
 **When** they proceed
-**Then** they enter the registration flow (Story 3.1)
+**Then** they enter the registration flow (Story 3.1) — the OS passkey dialog opens immediately (no second "Set up passkey" screen); see `epic-3-passkey-runtime-model.md`
 
 > **Open question (OQ-8):** show the enrollment prompt on every login until dismissed, or only once with a persisted "don't show again"? Current AC assumes dismissible-per-session — confirm before dev.
 
@@ -854,3 +855,38 @@ So that a downstream outage never blocks me at the door.
 **Then** the sync is re-attempted in the background without blocking
 
 > **Open question (OQ-3):** the User-Service SLA informing retry-backoff timing is unresolved. The 3×/30s values are assumptions — confirm before implementing this story.
+
+---
+
+## Epic 6: Auth Screen Mockup Parity
+
+Align the three shipped auth screens with the June 2026 HTML mockups (`screen-login.html`, `screen-select-account.html`, `screen-invite-accepted.html`) while keeping the Epic 1 token/component CSS architecture (`tokens.css`, `components.css`, screen-specific CSS).
+
+### Story 6.1: Login, Select Account & Invite Accepted mockup parity
+
+As an Agent signing in or onboarding,
+I want the login, account picker, and invite-accepted screens to match the approved mockups,
+So that the auth experience feels consistent with the WhataTalk product design.
+
+> **Working Repositories:** Two repos — complete in order:
+> 1. `keycloak-multi-tenancy` — present `invite-accepted.ftl` challenge after single-invite auto-accept; handle `proceed` / `decline` in `ReviewTenantInvitations.processAction`.
+> 2. `azguards-keycloak-custom-theme` — align `login.ftl`, `select-tenant.ftl`, and new `invite-accepted.ftl` with mockup layout, typography, spacing, and components.
+
+**Acceptance Criteria:**
+
+**Given** the login screen
+**When** it renders
+**Then** it matches `screen-login.html`: mint background, CSS wordmark, 400px wrap, card padding 30/28/26px, title + subtitle, dashed passkey row above password, inline credential error, Login + outline Create New Business + Forgot Password inside the card (UX mockup 2026-06-11)
+
+**Given** the select-account screen
+**When** it renders
+**Then** it matches `screen-select-account.html`: brand wordmark, subtitle, always-visible search, 42px avatar rows with chevron, inline "Last used" tag, 2px pinned border on last-used row, `Roles:` prefix
+
+**Given** a single pending invitation auto-accepts
+**When** `ReviewTenantInvitations` completes membership grant
+**Then** `invite-accepted.ftl` is shown matching `screen-invite-accepted.html` (toast + success card, account pill, Go to account, Not you? Decline) — no blank screen (FR-INV-7)
+
+**Given** the invite-accepted screen
+**When** the Agent taps Go to account or Not you? Decline
+**Then** proceed continues login; decline revokes membership, logs out, and returns to login (FR-INV-8)
+

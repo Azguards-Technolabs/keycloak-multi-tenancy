@@ -1926,7 +1926,7 @@
           "userSetupAllowed": false
         },
         {
-          "authenticator": "webauthn-authenticator",
+          "authenticator": "webauthn-authenticator-passwordless",
           "authenticatorFlow": false,
           "requirement": "ALTERNATIVE",
           "priority": 32,

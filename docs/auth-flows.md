@@ -12,6 +12,7 @@ Order matters — README mandates this exact order in *Authentication → Requir
 | 1 | `review-tenant-invitations` | `ReviewTenantInvitations` | User has pending invitations **and** `user.email` present **and** `emailVerified`; skipped if client note `tenantInvitationsReviewed=true` already set this session |
 | 2 | `create-tenant` | `CreateTenant` | User has **zero** tenant memberships |
 | 3 | `select-active-tenant` | `SelectActiveTenant` | No `active-tenant-id` session note yet **and** user has **>1** membership (1 membership → auto-selected, no prompt) |
+| 4 | `prompt-passkey-enrollment` | `PromptPasskeyEnrollment` | No `webauthn-passwordless` credential; per-login only (auth-session queue). Priority **1004** — runs after tenant steps. See `epic-3-passkey-runtime-model.md`. |
 
 ### Authenticators (`META-INF/services/...AuthenticatorFactory`)
 | ID | Class | Role | `requiresUser` |
@@ -63,6 +64,9 @@ User authenticates (login or registration)
             - if now has memberships → remove create-tenant, add select-active-tenant
           sets client note tenantInvitationsReviewed=true
    └─> [select-active-tenant] 1 membership → auto; >1 → SHOW select-tenant.ftl
+   └─> [prompt-passkey-enrollment] no webauthn-passwordless credential → SHOW passkey-enrollment-prompt.ftl
+          "Set up a passkey" → webauthn-register-passwordless (OS dialog via webauthn-register.ftl auto-start)
+          "Not now" → dismiss for this login; next required action or finish (must not re-prompt in same login — 26.6.9+)
    └─> tokens minted
 ```
 **UX notes:**
@@ -113,9 +117,9 @@ GET  {realm-resource-base}/user-tenants  (GetUserTenants) → list of the user's
 
 | Area | Current state | Redesign implication |
 |---|---|---|
-| Auth methods | Password + standard KC; SSO via typed alias. **No passkeys/magic link** (KC 26.0.7) | Upgrade → 26.4+ for native passkeys; add email-domain IdP discovery |
+| Auth methods | Password + passkey-first (passwordless WebAuthn on KC 26.4+); SSO via typed alias; magic link (realm-dependent) | Email-domain IdP discovery; keep `passkeyAuthExecId` patched in theme deploy |
 | Theming | Flows are FreeMarker with **hardcoded inline dark CSS**; not theme-variable driven | Move styling to theme; enables per-client/per-tenant branding |
-| Step count | Up to 3 sequential full-page required actions after KC login/registration | Consolidate/▼ steps; auto-skip aggressively (already done for 1-membership cases) |
+| Step count | Up to 4 sequential full-page required actions after KC login/registration (invites → create tenant → select tenant → passkey prompt) | Consolidate/▼ steps; auto-skip aggressively (already done for 1-membership cases) |
 | Tenant picker | `select-tenant.ftl` static card list, no search | Redesign as polished, searchable, branded picker |
 | Invites | Generic email copy; sync external User Service call; debug JS shipped | Add inviter/role context + CTA; make external call resilient; strip debug |
 | Session re-mint | Tenant switch regenerates tokens ✓ | Keep |

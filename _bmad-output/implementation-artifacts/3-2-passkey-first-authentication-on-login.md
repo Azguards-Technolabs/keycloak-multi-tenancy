@@ -30,13 +30,13 @@ So that I authenticate in one tap without typing a password.
 
 > Complete all Repo 1 tasks before starting Repo 2. The flow wiring must be present in realm-export.json before the theme integration can be tested end-to-end.
 
-- [x] **Task 1: Wire `webauthn-authenticator` into the browser flow in realm-export.json** (AC: #1, #2)
+- [x] **Task 1: Wire `webauthn-authenticator-passwordless` into the browser flow in realm-export.json** (AC: #1, #2)
   - [x] Open `src/test/resources/realm-export.json`
   - [x] Locate the top-level `browser custom` flow (alias `"browser custom"`, builtIn `false`) — it already contains `login-with-sso` as ALTERNATIVE at priority 31
-  - [x] Add `webauthn-authenticator` as a new ALTERNATIVE execution **at priority 32** in the `browser custom` top-level flow, immediately after `login-with-sso`:
+  - [x] Add **`webauthn-authenticator-passwordless`** as a new ALTERNATIVE execution **at priority 32** in the `browser custom` top-level flow, immediately after `login-with-sso`:
     ```json
     {
-      "authenticator": "webauthn-authenticator",
+      "authenticator": "webauthn-authenticator-passwordless",
       "authenticatorFlow": false,
       "requirement": "ALTERNATIVE",
       "priority": 32,
@@ -44,7 +44,7 @@ So that I authenticate in one tap without typing a password.
       "userSetupAllowed": false
     }
     ```
-  - [x] **CRITICAL: Verify the provider ID** — KC 26.6.3's non-passwordless WebAuthn authenticator factory uses provider ID `webauthn-authenticator` (class `WebAuthnAuthenticatorFactory`). Check KC 26.6.3 source: `https://github.com/keycloak/keycloak/blob/26.6.3/services/src/main/java/org/keycloak/authentication/authenticators/browser/WebAuthnAuthenticatorFactory.java` — confirm `getId()` returns `"webauthn-authenticator"` (not `"webauthn-password-less"`). Do NOT confuse with the passwordless variant.
+  - [x] **CRITICAL: Verify the provider ID** — KC 26.x passwordless WebAuthn authenticator uses provider ID `webauthn-authenticator-passwordless` (`WebAuthnPasswordlessAuthenticatorFactory`). **Runtime model (2026-06-25):** this project uses the passwordless variant for discoverable passkeys; see `epic-3-passkey-runtime-model.md`.
   - [x] Do NOT change `browser custom forms` sub-flow — `auth-username-password-form` stays REQUIRED at priority 10. Passkey selection bypasses the forms sub-flow entirely via the top-level ALTERNATIVE, the same mechanism used by `login-with-sso` (Story 2.3).
   - [x] Do NOT touch other flows (browser, direct grant, reset credentials, etc.)
 
@@ -299,24 +299,24 @@ browser custom (top-level, builtIn: false):
   │    ├─ auth-username-password-form  REQUIRED  priority 10  → renders login.ftl
   │    └─ browser custom Browser - Conditional OTP  CONDITIONAL  priority 20
   ├─ login-with-sso           ALTERNATIVE  priority 31  → renders login-with-sso.ftl  [Story 2.3]
-  └─ webauthn-authenticator   ALTERNATIVE  priority 32  → renders webauthn-authenticate.ftl  [NEW — Task 1]
+  └─ webauthn-authenticator-passwordless   ALTERNATIVE  priority 32  → renders webauthn-authenticate.ftl  [Task 1]
 ```
 
-**How alternative selection works:** When `login.ftl` posts `authenticationExecution=<exec-id>` to `url.loginAction`, KC selects the ALTERNATIVE execution matching that ID at the top level of `browser custom`. This is the same mechanism that routes SSO (Story 2.3) and magic-link (Story 2.4). The `passkeyAuthExecId` theme property holds the UUID of the `webauthn-authenticator` execution after it is added to the flow.
+**How alternative selection works:** When `login.ftl` posts `authenticationExecution=<exec-id>` to `url.loginAction`, KC selects the ALTERNATIVE execution matching that ID at the top level of `browser custom`. This is the same mechanism that routes SSO (Story 2.3) and magic-link (Story 2.4). The `passkeyAuthExecId` theme property holds the UUID of the **`webauthn-authenticator-passwordless`** execution (set per realm via Admin Console or `setup-realm-auth.sh`).
+
+**Runtime note (2026-06-25):** See `epic-3-passkey-runtime-model.md` for why the passwordless authenticator is used instead of `webauthn-authenticator`.
 
 ---
 
-### KC 26.6.3 WebAuthn Authenticate Provider
+### KC 26.x WebAuthn Passwordless Authenticate Provider
 
-**Built-in provider:** `org.keycloak.authentication.authenticators.browser.WebAuthnAuthenticatorFactory`
-- Provider ID: `webauthn-authenticator` — **verify via KC 26.6.3 source before use**
-- Do NOT use `webauthn-authenticator-passwordless` — that is for the separate passwordless flow
-- The factory registers itself in `META-INF/services/org.keycloak.authentication.AuthenticatorFactory` in the KC distribution JAR — no entry needed in the extension's services file
+**Built-in provider:** `org.keycloak.authentication.authenticators.browser.WebAuthnPasswordlessAuthenticatorFactory`
+- Provider ID: **`webauthn-authenticator-passwordless`**
+- Registers in KC distribution JAR — no entry needed in the extension's services file
 
 **Realm policy applicable to authentication:**
-- `webAuthnPolicyRequireResidentKey: "required"` (set in Story 3.1) → passkeys are DISCOVERABLE credentials
-- Discoverable = allowCredentials MUST be empty in the `navigator.credentials.get()` call; the browser surfaces all available passkeys without needing to specify credential IDs
-- **VERIFY** this is the correct KC 26.6.3 behavior for the WebAuthn authenticate flow
+- Configure **`webAuthnPolicyPasswordless*`** (Rp name, resident key, user verification, ES256)
+- Discoverable passkeys → `allowCredentials` empty in `navigator.credentials.get()`; browser surfaces available passkeys
 
 ---
 
@@ -326,7 +326,7 @@ After adding the execution to `realm-export.json`, the runtime KC instance assig
 
 ```properties
 # In: src/main/resources/theme/azguards-whatsapp/login/theme.properties
-passkeyAuthExecId=<UUID of webauthn-authenticator execution in browser custom flow>
+passkeyAuthExecId=<UUID of webauthn-authenticator-passwordless execution in browser custom flow>
 ```
 
 **How to find the UUID:** After importing the updated realm-export.json into KC, go to Admin Console → Authentication → `browser custom` flow → copy the execution ID for `Webauthn Authenticator` (or similar label).
@@ -464,7 +464,7 @@ Available in `components.css` and used in prior templates:
 - **Graceful degradation when no passkey is registered or device doesn't support WebAuthn** — Story 3.3. The passkey button is visible whenever `passkeyAuthExecId` is set; Story 3.3 adds client-side detection to conditionally hide/show it.
 - **Post-login enrollment prompt** — Story 3.4.
 - **`webauthn-register.ftl` changes** — Story 3.1 (complete, do not touch).
-- **Passwordless WebAuthn flow** (`webauthn-authenticator-passwordless`) — do NOT configure; it is a distinct KC mechanism.
+- **Passwordless WebAuthn flow** — **in scope (runtime model, 2026-06-25):** `webauthn-authenticator-passwordless` + `webauthn-register-passwordless`; see `epic-3-passkey-runtime-model.md`
 - **`aria-live` announcement on passkey fallback to password** — Story 3.3 (explicitly in that story's AC).
 - **Any modification to `register.ftl`, `login-oauth-grant.ftl`, `email/` templates, admin tenant switcher** — AR-OOS.
 - **Modifications to other browser flows** (direct grant, reset credentials, first-broker-login).
@@ -492,6 +492,7 @@ Repo 1 changes are flow wiring + i18n only (no Java code), so no new unit tests 
 - UX design: `_bmad-output/planning-artifacts/ux-designs/ux-keycloak-multi-tenancy-2026-06-11/EXPERIENCE.md` — passkey-first entry model
 - Previous story: `_bmad-output/implementation-artifacts/3-1-username-bound-passkey-registration.md` — standalone FTL pattern, IIFE JS pattern, base64url helpers, form field verification approach, retro lessons
 - Sprint status: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- **`epic-3-passkey-runtime-model.md`** — passwordless runtime model, `passkeyAuthExecId` wiring (2026-06-25)
 - Deferred work: `_bmad-output/implementation-artifacts/deferred-work.md` — Story 3.1 deferrals (feature-detect → Story 3.3; unhandled rejection types → Story 3.3)
 - realm-export.json: `src/test/resources/realm-export.json` — `browser custom` flow (lines ~1882), `browserFlow` setting (line ~2499)
 - KC 26.6.3 source (verify context variables): `https://github.com/keycloak/keycloak/blob/26.6.3/themes/src/main/resources/theme/base/login/webauthn-authenticate.ftl`
@@ -532,7 +533,8 @@ claude-sonnet-4-6
 
 ## Change Log
 
-- 2026-06-15: Story 3.2 created — Passkey-first authentication on login. Repo 1: add webauthn-authenticator execution to browser custom flow + 7 passkey auth i18n keys. Repo 2: new webauthn-authenticate.ftl (standalone HTML, IIFE get ceremony, States A/B, "Use password instead" fallback, a11y) + login.ftl update (passkey affordance above password field via passkeyAuthExecId theme property, IIFE listener, localStorage method tracking).
+- 2026-06-15: Story 3.2 created — Passkey-first authentication on login. Repo 1: add webauthn-authenticator-passwordless execution to browser custom flow + 7 passkey auth i18n keys. Repo 2: new webauthn-authenticate.ftl (standalone HTML, IIFE get ceremony, States A/B, "Use password instead" fallback, a11y) + login.ftl update (passkey affordance above password field via passkeyAuthExecId theme property, IIFE listener, localStorage method tracking).
+- 2026-06-25: Documented runtime passwordless model (`webauthn-authenticator-passwordless`, credential type `webauthn-passwordless`). `setup-realm-auth.sh` / `deploy-local.sh` wire `passkeyAuthExecId` automatically. See `epic-3-passkey-runtime-model.md`.
 - 2026-06-15: Implementation complete. KC 26.6.3 context variable corrections applied: `userVerification` (not `userVerificationRequirement`), form id `webauth`, retry via `message.type=="error"`. Both repos BUILD SUCCESS. Story → review.
 
 ## Review Findings

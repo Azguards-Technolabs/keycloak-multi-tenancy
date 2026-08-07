@@ -80,8 +80,9 @@ So that I have a passwordless credential for future logins.
     - `<main class="wt-login-layout"><div class="wt-card">...</div></main>`
     - `<h1 tabindex="-1">` — focused on page load for screen reader announcement
   - [x] **Template states to handle:**
-    - **State A (initial):** Show title (`msg("passkeyRegisterTitle")`), intro text (`msg("passkeyRegisterIntro")`), primary "Set up passkey" button that triggers the WebAuthn ceremony, and "Not now" skip link
-    - **State B (retry — `isSetRetry == true`):** Show error message (`msg("passkeyRegisterError")`), "Try again" button, and "Not now" skip link
+    - **State A (initial — manual):** Show title, intro, primary button, "Not now" skip (direct navigation to required action or manual test)
+    - **State B (retry — `isSetRetry == true`):** Show error message, "Try again" button, and "Not now" skip link
+    - **State C (auto-start — added 2026-06-25):** When `!isSetRetry` (first load, e.g. from Story 3.4 enroll), show only `passkeyRegisterInProgress` copy; hide primary/skip buttons; **auto-invoke** `navigator.credentials.create()` on page load. Retry state restores State A/B UI.
   - [x] **WebAuthn ceremony JavaScript — must be preserved verbatim:**
     - KC provides context variables: `challenge`, `userid`, `username`, `signatureAlgorithms`, `rpEntityName`, `rpId`, `attestationConveyancePreference`, `authenticatorAttachment`, `requireResidentKey`, `userVerificationRequirement`, `createTimeout`, `excludeCredentialIds`
     - **CRITICAL:** Verify these variable names against actual KC 26.6.3 `webauthn-register.ftl` source before use. Variable names can differ between KC versions — read the KC default template at runtime or from KC source to confirm exact names.
@@ -342,9 +343,9 @@ From `epic-2-retro-2026-06-15.md`:
 ### What Is Explicitly Out of Scope for Story 3.1
 
 - **Passkey affordance on `login.ftl`** — that is Story 3.2 (`webauthn-authenticate`, not `webauthn-register`)
-- **Post-login enrollment prompt** — that is Story 3.4 (`passkey_enrollment_dismissed` user attribute; OQ-8 resolved as once-only)
-- **Graceful degradation on unsupported devices** — that is Story 3.3
-- **`webauthn-register-passwordless`** — do NOT configure the passwordless WebAuthn policy or provider; it is a different KC mechanism from the standard passkey `webauthn-register`
+- **Post-login enrollment prompt** — Story 3.4 (triggers this FTL via `webauthn-register-passwordless`)
+- **Graceful degradation on unsupported devices** — Story 3.3
+- **`webauthn-register` (standard second-factor)** — not used in the deployed passkey path; runtime uses **`webauthn-register-passwordless`** (see `epic-3-passkey-runtime-model.md`)
 - **Any modification to `realm-export.json` browser flow** — `webauthn-register` is a required action, not a browser flow execution; it is triggered per-user, not in the flow directly
 - **Creating `webauthn-authenticate.ftl`** — that is Story 3.2
 - **Touchpoints: `register.ftl`, `login-oauth-grant.ftl`, `email/` templates, admin tenant switcher** — AR-OOS, do not touch
@@ -371,6 +372,7 @@ Build gate: `mvn package -DskipTests` → BUILD SUCCESS for both repos. All 39 e
 - Previous story: `_bmad-output/implementation-artifacts/2-4-conditional-email-me-a-sign-in-link-magic-link.md` — standalone FTL pattern, tracing pattern, IIFE JS pattern
 - realm-export.json: `src/test/resources/realm-export.json` lines 388-411 (WebAuthn policy), lines 2445-2461 (required actions)
 - KC 26.6.3 source (verify context variables): `https://github.com/keycloak/keycloak/blob/26.6.3/themes/src/main/resources/theme/base/login/webauthn-register.ftl`
+- **`epic-3-passkey-runtime-model.md`** — passwordless runtime model, State C auto-start, deployment ops (2026-06-25)
 
 ## Dev Agent Record
 
@@ -409,6 +411,7 @@ claude-sonnet-4-6
 - 2026-06-15: Story 3.1 created — Username-bound passkey registration. Repo 1: realm-export.json WebAuthn policy configuration + i18n keys. Repo 2: standalone webauthn-register.ftl using Epic 1 tokens/components. No new Java SPI code — built-in KC 26.6.3 webauthn-register required action covers the registration ceremony.
 - 2026-06-15: Story 3.1 implemented — Repo 1: realm-export.json passkey policy (rpEntityName=WhataTalk, requireResidentKey=required, userVerificationRequirement=required, createTimeout=60), 8 passkeyRegister i18n keys added. Repo 2: webauthn-register.ftl created (standalone HTML, IIFE ceremony JS, inline base64url helpers, State A/B, a11y). Both repos build successfully.
 - 2026-06-15: Story 3.1 render verification — KC 26.6.3 Testcontainers + Playwright render test (WebAuthnRegisterRenderTest) confirms webauthn-register.ftl renders correctly. Two login.ftl bugs discovered and fixed: (1) `?html` conflict with FreeMarker auto-escaping HTML output format (lines 138/143); (2) missing `message?is_hash` guard on lines 29/31. BaseIntegrationTest updated to include theme JAR in KC provider libs for render testing.
+- 2026-06-25: **State C auto-start** — First-load registration (from Story 3.4 enroll) auto-starts WebAuthn ceremony; `authenticatorLabel` set to `Passkey-<timestamp>` to avoid duplicate-device errors. FTL serves both `webauthn-register` and `webauthn-register-passwordless`. Runtime model documented in `epic-3-passkey-runtime-model.md`.
 
 ## Review Findings
 

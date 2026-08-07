@@ -36,10 +36,11 @@ So that I can opt into faster sign-in next time.
 2. **Given** the enrollment-prompt screen is displayed
    **When** the Agent taps "Not now"
    **Then** the Agent proceeds into the product with no passkey created and is not blocked; the prompt reappears on the next password-based login (per-session dismiss — OQ-8 Option A)
+   **And** the prompt is shown **at most once per login** — "Not now" advances to the next required action (e.g. select tenant) without a second passkey screen (see `epic-3-passkey-runtime-model.md`, extension **26.6.9+**)
 
 3. **Given** the enrollment-prompt screen is displayed
    **When** the Agent taps "Set up a passkey"
-   **Then** the Agent enters the existing passkey registration flow (Story 3.1 `webauthn-register.ftl`) without any new registration UI being created
+   **Then** the browser OS passkey dialog opens immediately via `webauthn-register.ftl` auto-start (no second "Set up passkey" screen with duplicate buttons). On failure, the retry state shows **Try again** and **Not now** (FR-PK-3, Story 3.1 State C — see `epic-3-passkey-runtime-model.md`)
 
 4. **Given** the Agent already has a registered passkey credential
    **When** `evaluateTriggers` runs
@@ -196,12 +197,13 @@ So that I can opt into faster sign-in next time.
     **AC #2 — "Not now" dismiss:**
     - On the enrollment prompt screen, click "Not now"
     - Verify Agent proceeds into the product without a passkey being created
+    - Verify the passkey prompt does **not** appear a second time in the same login (e.g. before select-tenant)
     - Log out and log in again with password — verify the prompt appears again
 
     **AC #3 — "Set up a passkey" routes to registration:**
     - On the enrollment prompt screen, click "Set up a passkey"
-    - Verify the existing `webauthn-register.ftl` screen appears ("Set up a passkey" with the OS passkey prompt)
-    - Complete registration — verify passkey is registered and Agent proceeds
+    - Verify the OS passkey dialog opens immediately (brief "Follow the prompt on your device…" page may flash; no second "Set up passkey" button screen)
+    - Complete registration — verify passkey is registered (`webauthn-passwordless` credential) and Agent proceeds
 
     **AC #4 — No prompt when passkey already exists:**
     - Log in as an Agent who already has a registered passkey
@@ -268,35 +270,43 @@ azguards-keycloak-custom-theme (Repo 2 — FTL, complete after Repo 1):
 
 ### Credential Type Check — KC 26.x API
 
-In KC 26.x, check if a user has registered a passkey (WebAuthn second-factor credential):
+> **Updated 2026-06-25:** Runtime uses the **passwordless** credential type. See `epic-3-passkey-runtime-model.md`.
 
 ```java
-// In evaluateTriggers — correct KC 26.x API:
+// In evaluateTriggers — correct for this project's passkey model:
 boolean hasPasskey = user.credentialManager()
-    .getStoredCredentialsByTypeStream("webauthn")
+    .getStoredCredentialsByTypeStream("webauthn-passwordless")
     .findAny()
     .isPresent();
 ```
 
-`"webauthn"` is the credential type string for `webauthn-register` (second-factor / roaming authenticator), consistent with what Story 3.1 stores. This is `WebAuthnCredentialModel.TYPE_TWOFACTORS` in KC source. The passwordless type (`"webauthn-passwordless"`) is NOT used by this project.
+`"webauthn-passwordless"` is the credential type for discoverable passkeys registered via `webauthn-register-passwordless`. The standard `"webauthn"` type (`webauthn-register` / second-factor) is **not** used in the deployed login/enrollment path.
 
 **Do NOT use** `context.getSession().userCredentialManager()` (the older session-level API) — prefer `user.credentialManager()` which is the KC 26.x user-scoped API.
 
 ---
 
-### Routing to `webauthn-register` on Accept
+### Routing to registration on Accept
 
-When the Agent accepts, the `processAction` must:
+> **Updated 2026-06-25:** Routes to **`webauthn-register-passwordless`** as a skippable app-initiated action on the **auth session**, not `user.addRequiredAction("webauthn-register")`.
+
+When the Agent accepts:
 
 ```java
-// Route to existing Story 3.1 webauthn-register required action:
-context.getUser().addRequiredAction("webauthn-register");
+authSession.setAuthNote(ENROLLMENT_CHOICE_NOTE, "enroll");
+authSession.setClientNote(Constants.KC_ACTION, "webauthn-register-passwordless");
+authSession.setClientNote(Constants.KC_ACTION_EXECUTING, "webauthn-register-passwordless");
+authSession.removeClientNote(Constants.KC_ACTION_ENFORCED);
+authSession.addRequiredAction("webauthn-register-passwordless");
+user.removeRequiredAction("webauthn-register-passwordless"); // do not persist as mandatory user action
 context.success();
 ```
 
-`"webauthn-register"` is the ID of KC's built-in required action (registered by KC itself, not by this extension). After `context.success()` on `PromptPasskeyEnrollment`, KC will process `webauthn-register` next using the existing `webauthn-register.ftl` (Story 3.1). Story 3.4 does NOT create any new registration UI.
+KC renders the existing `webauthn-register.ftl` (Story 3.1), which **auto-starts** the WebAuthn ceremony on first load. Story 3.4 owns the prompt only; Story 3.1 FTL owns ceremony UX.
 
-**Do NOT attempt to redirect to a URL directly.** KC's required-action machinery handles the ordering after `context.success()`.
+**Form parameter:** POST bodies use `enrollmentChoice=enroll|dismiss`, **not** `name="action"` (collides with KC required-action handling).
+
+**Do NOT attempt to redirect to a URL directly.** KC's required-action machinery handles ordering after `context.success()`.
 
 ---
 
@@ -339,7 +349,7 @@ The external CDN logo load without SRI is a pre-existing deferred item (from Sto
 
 This story implements **Option A (per-session dismiss)** as described in the Open Question section above.
 
-`evaluateTriggers` re-adds the required action on every login where the user has no passkey. After dismiss, the action is removed from the user's required actions set (by `context.success()`), and KC re-adds it on the next login via `evaluateTriggers`. No user attribute is written — this is intentionally stateless.
+`evaluateTriggers` re-adds the required action on every login where the user has no passkey. After dismiss, choice is recorded in **`passkey-enrollment-choice`** notes (auth + user-session + client) and the prompt must not re-render in the same login. **`LAST_PROCESSED_EXECUTION`** (set by Keycloak after `processAction`) is a fallback guard when notes are lost across redirects. Queue only on **`authSession.addRequiredAction`**, not `user.addRequiredAction`. See `epic-3-passkey-runtime-model.md` (26.6.9+).
 
 If Option B (persistent dismiss) is later required, the change is isolated to `evaluateTriggers` + the `"dismiss"` branch of `processAction`:
 - `evaluateTriggers`: also check `!"true".equals(user.getFirstAttribute("passkeyEnrollDeclined"))`
@@ -365,8 +375,7 @@ No new Testcontainers/Playwright tests are required for this story (consistent w
 
 ### What Is Explicitly Out of Scope for Story 3.4
 
-- **Any modification to `webauthn-register.ftl`** — Story 3.1 owns it; Story 3.4 reuses it as-is
-- **Any new passkey registration ceremony** — Story 3.4 just prompts; Story 3.1's existing `webauthn-register` does the actual ceremony
+- **New passkey registration ceremony UI** — Story 3.4 prompts only; Story 3.1's `webauthn-register.ftl` runs the ceremony (including auto-start added 2026-06-25)
 - **Persistent "don't show again" flag** — out of scope unless Asif selects OQ-8 Option B
 - **SSO or magic-link login paths** — enrollment prompt only fires via the required-action machinery
 - **i18n for non-English locales (`messages_sv.properties`)** — consistent with existing pattern
@@ -377,6 +386,7 @@ No new Testcontainers/Playwright tests are required for this story (consistent w
 
 ### References
 
+- **`epic-3-passkey-runtime-model.md`** — authoritative runtime model (passwordless providers, enrollment UX, anti–double-prompt, deployment) — **2026-06-29**
 - Epics file: `_bmad-output/planning-artifacts/epics.md` — Epic 3, Story 3.4 (FR-PK-3)
 - Architecture: `_bmad-output/planning-artifacts/architecture.md` — WebAuthn SPI, required action pattern
 - Previous story: `_bmad-output/implementation-artifacts/3-3-graceful-passkey-fallback-degradation.md`
@@ -404,9 +414,11 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 - Implemented `PromptPasskeyEnrollment` as a dual-interface required action (RequiredActionProvider + RequiredActionFactory in one class), following the same pattern as `ReviewTenantInvitations`, `SelectActiveTenant`, and `CreateTenant`.
-- `evaluateTriggers` checks for existing WebAuthn credentials via `user.credentialManager().getStoredCredentialsByTypeStream("webauthn")` (KC 26.x API) and guards against duplicate queuing.
-- Per-session dismiss (OQ-8 Option A): `processAction` calls `context.success()` on dismiss with no attribute written; KC re-runs `evaluateTriggers` on next login.
-- Enroll path routes to the existing `webauthn-register` required action via `user.addRequiredAction("webauthn-register"); context.success()`.
+- `evaluateTriggers` checks for existing passkeys via `webauthn-passwordless` credential type (updated from original `webauthn` spec — see `epic-3-passkey-runtime-model.md`).
+- Per-session dismiss (OQ-8 Option A): `processAction` sets auth note `passkey-enrollment-choice=dismiss`, clears KC_ACTION client notes, calls `context.success()`.
+- Enroll path routes to `webauthn-register-passwordless` via auth-session required action + KC_ACTION client notes (skippable AIA); does **not** persist `webauthn-register-passwordless` on the user model.
+- `passkey-enrollment-prompt.ftl` uses `enrollmentChoice` form field (not `action`).
+- **26.6.9 — dismiss loop fix:** triple-note `passkey-enrollment-choice` persistence (auth, user-session, client); queue on auth session only; `requiredActionChallenge` / `evaluateTriggers` short-circuit when choice set or `LAST_PROCESSED_EXECUTION` matches; idempotent `processAction`.
 - Full Zipkin/Brave tracing on all three methods with span names `prompt-passkey-enrollment.evaluateTriggers`, `prompt-passkey-enrollment.challenge`, `prompt-passkey-enrollment.processAction`.
 - `passkey-enrollment-prompt.ftl` is standalone HTML (no layout import), uses IIFE JS pattern, auto-dismisses on unsupported WebAuthn browsers (AC #5), focuses h1 on load (AC #6 a11y).
 - Both repos built successfully: `mvn package -DskipTests` (Repo 1) and `mvn package` (Repo 2) → BUILD SUCCESS.
@@ -426,6 +438,8 @@ claude-sonnet-4-6
 
 - 2026-06-16: Story 3.4 implemented — `PromptPasskeyEnrollment` required action (Repo 1) and `passkey-enrollment-prompt.ftl` FTL (Repo 2). Both builds pass. All ACs satisfied. Status → review.
 - 2026-06-17: Code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor). No hard AC violations; all 6 ACs confirmed satisfied. Two "Critical" findings (credential-type mismatch / per-session-dismiss loop) refuted by codebase verification. 1 patch, 1 decision, 3 deferred, 6 dismissed.
+- 2026-06-25: **Runtime model + enrollment UX alignment** — Documented passwordless WebAuthn model (`webauthn-passwordless`, `webauthn-register-passwordless`, `webauthn-authenticator-passwordless`). Fixed duplicate enrollment screens: `webauthn-register.ftl` auto-starts OS dialog on first load; `PromptPasskeyEnrollment` uses `enrollmentChoice` param, auth-session routing, and KC_ACTION skippable registration. Authoritative addendum: `epic-3-passkey-runtime-model.md`. AC #3 updated accordingly.
+- 2026-06-29: **Dismiss loop fix (26.6.9)** — "Not now" no longer shows passkey prompt twice in one login. Documented in `epic-3-passkey-runtime-model.md`; AC #2 extended; `LAST_PROCESSED_EXECUTION` + auth-session-only queueing.
 
 ### Review Findings (2026-06-17)
 

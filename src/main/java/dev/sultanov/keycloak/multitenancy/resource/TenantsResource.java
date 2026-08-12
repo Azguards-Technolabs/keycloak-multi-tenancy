@@ -68,11 +68,6 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
                 log.error("Tenant name cannot be null or empty");
                 throw new BadRequestException("Tenant name cannot be null or empty");
             }
-            boolean nameExists = tenantProvider.getTenantsStream(realm, null, null, null, null)
-                    .anyMatch(t -> t.getName().equalsIgnoreCase(request.getName()));
-            if (nameExists) {
-                return Response.status(Response.Status.CONFLICT).entity("A tenant with this name already exists.").build();
-            }
             if (isNullOrWhitespace(request.getMobileNumber())) {
                 log.error("Tenant mobile number cannot be null or empty");
                 throw new BadRequestException("Tenant mobile number cannot be null or empty");

@@ -92,10 +92,15 @@ public class SwitchActiveTenant {
             String currentActiveOrganization = user.getFirstAttribute(ACTIVE_TENANT_ATTRIBUTE);
             user.setSingleAttribute(ACTIVE_TENANT_ATTRIBUTE, request.getTenantId());
 
-            // Also store in session note for protocol mapper
-            UserSessionModel userSession = session.sessions().getUserSession(realm, token.getId());
+            // Also store in session note for protocol mapper.
+            // token.getId() is the access token's jti, not the user session id — use
+            // getSessionId() (the "sid" claim) to resolve the actual UserSessionModel.
+            UserSessionModel userSession = session.sessions().getUserSession(realm, token.getSessionId());
             if (userSession != null) {
                 userSession.setNote(Constants.ACTIVE_TENANT_ID_SESSION_NOTE, request.getTenantId());
+            } else {
+                log.warnf("Could not resolve user session for sessionId %s (user %s) — active-tenant session note not updated",
+                        token.getSessionId(), user.getId());
             }
 
             log.info("User " + user.getId() + " switched active tenant from " +

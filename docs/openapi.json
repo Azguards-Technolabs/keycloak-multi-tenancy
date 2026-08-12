@@ -234,6 +234,10 @@
               }
             },
             "description" : "Attributes of the tenant"
+          },
+          "ownerUserId" : {
+            "type" : "string",
+            "description" : "Optional: grant tenant-admin membership to this user ID instead of the caller. Only honored for callers holding the tenants-manager role; trusted service callers (e.g. the application backend creating a tenant on behalf of an end user) use this so the real user — not the calling service account — becomes the tenant owner."
           }
         },
         "required" : [ "name" ]
@@ -730,6 +734,10 @@
                         }
                       },
                       "description" : "Attributes of the tenant"
+                    },
+                    "ownerUserId" : {
+                      "type" : "string",
+                      "description" : "Optional: grant tenant-admin membership to this user ID instead of the caller. Only honored for callers holding the tenants-manager role; trusted service callers (e.g. the application backend creating a tenant on behalf of an end user) use this so the real user — not the calling service account — becomes the tenant owner."
                     }
                   },
                   "required" : [ "name" ]
@@ -978,6 +986,51 @@
             "description" : "Internal Server Error"
           }
         }
+      },
+      "put" : {
+        "summary" : "Grant membership by user ID",
+        "operationId" : "grantMembershipByUserId",
+        "parameters" : [ {
+          "description" : "Tenant ID",
+          "name" : "tenantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "User ID to grant membership to",
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TenantMembershipRepresentation"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          }
+        }
       }
     },
     "/tenants/{tenantId}/memberships/{membershipId}" : {
@@ -1055,7 +1108,7 @@
   },
   "info" : {
     "title" : "Keycloak Multi-Tenancy",
-    "version" : "26.6.9"
+    "version" : "26.6.10"
   },
   "servers" : [ {
     "url" : "{{keycloakUrl}}/auth/realms/{{realmName}}"

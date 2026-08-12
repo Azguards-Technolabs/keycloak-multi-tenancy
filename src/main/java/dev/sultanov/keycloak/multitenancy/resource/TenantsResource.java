@@ -2,8 +2,11 @@ package dev.sultanov.keycloak.multitenancy.resource;
 
 import dev.sultanov.keycloak.multitenancy.model.TenantModel;
 import dev.sultanov.keycloak.multitenancy.model.TenantProvider;
+import dev.sultanov.keycloak.multitenancy.resource.representation.TenantMembershipRepresentation;
 import dev.sultanov.keycloak.multitenancy.resource.representation.TenantRepresentation;
 import dev.sultanov.keycloak.multitenancy.resource.representation.UserMembershipRepresentation;
+import dev.sultanov.keycloak.multitenancy.util.Constants;
+import org.keycloak.models.UserModel;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -22,6 +25,7 @@ import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import brave.Span;
@@ -80,8 +84,9 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
 
             validateAttributes(request.getAttributes());
 
+            UserModel owner = resolveOwner(request.getOwnerUserId());
 
-            TenantModel tenant = tenantProvider.createTenant(realm, request.getName(), request.getMobileNumber(), request.getCountryCode(), request.getStatus(), auth.getUser());
+            TenantModel tenant = tenantProvider.createTenant(realm, request.getName(), request.getMobileNumber(), request.getCountryCode(), request.getStatus(), owner);
 
             if (ObjectUtils.isNotEmpty(request.getAttributes())) {
                 for (Map.Entry<String, List<String>> attr : request.getAttributes().entrySet()) {
@@ -211,7 +216,7 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
         Throwable traceError = null;
         try (var ignored = TracingHelper.tracer().withSpanInScope(span)) {
             log.debug("Attempting to revoke membership for tenant ID: {} and user ID: {}", tenantId, userId);
-            
+
             if (tenantProvider.revokeMembership(realm, tenantId, userId)) {
                 log.info("Membership revoked successfully for tenant ID: {} and user ID: {}", tenantId, userId);
                 return Response.noContent().build();
@@ -225,6 +230,73 @@ public class TenantsResource extends AbstractAdminResource<TenantAdminAuth> {
         } finally {
             TracingHelper.finishSpan(span, traceError);
         }
+    }
+
+    /**
+     * Trusted-service grant: assigns membership to an explicit user ID synchronously, bypassing the
+     * invitation flow. Needed for onboarding sagas where the owning Keycloak user is only created
+     * *after* the tenant (so {@code ownerUserId} can't be set at {@link #createTenant} time) — without
+     * this, the caller's only option was an invitation the user must separately accept on a later login.
+     */
+    @PUT
+    @Path("{tenantId}/memberships/users/{userId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "grantMembershipByUserId", summary = "Grant membership by user ID")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "No Content"),
+            @APIResponse(responseCode = "401", description = "Unauthorized"),
+            @APIResponse(responseCode = "403", description = "Forbidden"),
+            @APIResponse(responseCode = "404", description = "Not Found")
+    })
+    public Response grantMembershipByUserId(
+            @Parameter(description = "Tenant ID") @PathParam("tenantId") String tenantId,
+            @Parameter(description = "User ID to grant membership to") @PathParam("userId") String userId,
+            TenantMembershipRepresentation request) {
+        if (!auth.isTenantsManager()) {
+            log.warn("Caller lacks tenants-manager role, rejecting grant-membership for tenant {}, user {}", tenantId, userId);
+            throw new ForbiddenException("Caller must hold the tenants-manager role to grant membership on behalf of another user");
+        }
+
+        TenantModel tenant = tenantProvider.getTenantById(realm, tenantId)
+                .orElseThrow(() -> new NotFoundException("Tenant not found"));
+
+        UserModel targetUser = session.users().getUserById(realm, userId);
+        if (ObjectUtils.isEmpty(targetUser)) {
+            throw new NotFoundException("User not found: " + userId);
+        }
+
+        Set<String> roles = (request != null && ObjectUtils.isNotEmpty(request.getRoles()))
+                ? request.getRoles()
+                : Set.of(Constants.TENANT_USER_ROLE);
+
+        tenant.grantMembership(targetUser, roles);
+        log.info("Granted membership (roles={}) to user {} for tenant {}", roles, userId, tenantId);
+
+        return Response.noContent().build();
+    }
+
+    /**
+     * Resolves who should be granted tenant-admin membership at creation time. Defaults to the caller
+     * (the token bearer). Trusted service callers (tenants-manager role) may instead specify
+     * {@code ownerUserId} to grant membership directly to the real end user they're provisioning for,
+     * instead of the calling service account. Falls back to the caller if the target user isn't found
+     * or the caller isn't authorized, rather than hard-failing tenant creation outright.
+     */
+    private UserModel resolveOwner(String ownerUserId) {
+        if (isNullOrWhitespace(ownerUserId)) {
+            return auth.getUser();
+        }
+        if (!auth.isTenantsManager()) {
+            log.warn("Caller lacks tenants-manager role, ignoring ownerUserId={} and granting tenant membership to caller {} instead",
+                    ownerUserId, auth.getUser().getId());
+            return auth.getUser();
+        }
+        UserModel owner = session.users().getUserById(realm, ownerUserId);
+        if (ObjectUtils.isEmpty(owner)) {
+            log.warn("ownerUserId {} not found, granting tenant membership to caller {} instead", ownerUserId, auth.getUser().getId());
+            return auth.getUser();
+        }
+        return owner;
     }
 
     private boolean isNullOrWhitespace(String str) {

@@ -17,8 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.CreatedResponseUtil;
 
 /**
- * Verifies AC-1 (non-blocking async user-service), AC-6 (retry endpoint returns 202),
- * and AC-7 (toast notes set unconditionally on single auto-accept path).
+ * Verifies AC-1 (non-blocking async user-service) and AC-6 (retry endpoint returns 202).
  */
 public class UserServiceAsyncTest extends BaseIntegrationTest {
 
@@ -73,26 +72,37 @@ public class UserServiceAsyncTest extends BaseIntegrationTest {
     }
 
     /**
-     * T-2 (AC-7): Single auto-accept path — toast notes are set unconditionally regardless of
-     * whether the async user-service call eventually succeeds or fails.
+     * T-2 (AC-1, story 5.5 AC-1/AC-3): Single invitation lands on the review screen — not
+     * auto-accepted — and accepting it still grants membership even though the user-service is
+     * unreachable, i.e. the async user-service call does not block completion (same guarantee as
+     * the 2+ picker path). This asserts the observable outcome — membership granted despite the
+     * unreachable service; it does not directly inspect the async submission itself.
      */
     @Test
-    void singleAutoAccept_toastNotesSetUnconditionally() {
+    void singleInvitation_reviewScreenShown_acceptStillProceedsDespiteUserServiceUnreachable() {
         var inviteeData = UserData.random();
         keycloakAdminCli.createVerifiedUser(inviteeData);
 
         var tenantResource = keycloakAdminCli.createVerifiedUser().createTenant();
+        String tenantName = tenantResource.toRepresentation().getName();
         sendInvitation(tenantResource, inviteeData.getEmail());
 
-        // Sign in — single invitation triggers auto-accept
-        AccountPage.open()
+        // Sign in — a single invitation must present the review screen, not auto-accept (AC-1)
+        var nextPage = AccountPage.open()
                 .signIn()
                 .fillCredentials(inviteeData.getEmail(), inviteeData.getPassword())
                 .signIn();
 
-        // Invitee should be a member of the tenant after auto-accept
+        assertThat(nextPage).isInstanceOf(ReviewInvitationsPage.class);
+
+        ((ReviewInvitationsPage) nextPage)
+                .acceptInvitation(tenantName)
+                .proceed();
+
+        // Accepting the single row grants membership, same as the 2+ path (AC-3), despite
+        // user-service at host.docker.internal:4003 being unreachable in CI
         var members = tenantResource.memberships().listMemberships(null, null, null);
-        assertThat(members).as("invitee should be a member after single auto-accept")
+        assertThat(members).as("invitee should be a member after accepting the single invitation")
                 .anyMatch(m -> m.getUser() != null && inviteeData.getEmail().equalsIgnoreCase(m.getUser().getEmail()));
     }
 

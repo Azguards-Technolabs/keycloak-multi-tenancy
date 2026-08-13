@@ -31,8 +31,8 @@ _This document builds collaboratively through step-by-step discovery. Sections a
   inline errors; calm lockout copy; Create New Business link to the existing (out-of-scope) flow.
 - **Account Selection (FR-AS, 8):** skip when 1 Account, picker when >1; row = logo/name/role;
   last-used pinned; search when >4 Accounts; skeleton loading; 0 Accounts → Create New Business.
-- **Invitation Acceptance (FR-INV, 8):** emailVerified on invite-link click; auto-accept single
-  invite with toast + decline; multi-invite picker; **non-blocking async User-Service call** with
+- **Invitation Acceptance (FR-INV, 8):** emailVerified on invite-link click; unified accept/reject
+  review screen for one or more pending invitations; **non-blocking async User-Service call** with
   background retry + quiet banner; no blank screens.
 - **Passkeys (FR-PK, 5):** username-credential-bound passkey registration/auth; passkey-first on
   login; optional post-login enrollment prompt; graceful fallback; **requires Keycloak 26.4+**.

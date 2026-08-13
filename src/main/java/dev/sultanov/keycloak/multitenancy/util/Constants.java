@@ -11,10 +11,6 @@ public class Constants {
     public static final String ACTIVE_TENANT_ATTRIBUTE = "active_tenant";
     public static final String IDENTITY_PROVIDER_SESSION_NOTE = "identity_provider";
 
-    public static final String TOAST_INVITER_NAME_NOTE = "toast.inviter.name";
-    public static final String TOAST_TENANT_NAME_NOTE  = "toast.tenant.name";
-    public static final String TOAST_TENANT_ID_NOTE    = "toast.tenant.id";
-
     /** Per-login passkey prompt choice (dismiss | enroll) — survives required-action re-evaluation. */
     public static final String PASSKEY_ENROLLMENT_CHOICE_NOTE = "passkey-enrollment-choice";
 

@@ -38,7 +38,7 @@ The current login and onboarding flow has compounding problems that directly har
 |---|------|
 | G-1 | Eliminate all visual bugs in the in-scope FreeMarker templates; establish a single coherent WhataTalk visual identity on the auth screens. |
 | G-2 | Reduce login friction for returning Agents, including passkey support as a primary affordance when registered. |
-| G-3 | Auto-accept single pending invitations so invited Agents land in the product without a manual approval step. |
+| G-3 | Present an explicit accept/reject review step for every pending invitation (one or more), so invited Agents make an informed decision before joining an Account. |
 | G-4 | Make the User-Service call during invite acceptance non-blocking so a backend failure never prevents an Agent from entering the product. |
 | G-5 | Deliver WCAG 2.1 AA accessible auth screens. |
 | G-6 | Support Keycloak upgrade to 26.4+ as the enabling platform change. |
@@ -105,11 +105,11 @@ Dana has never used WhataTalk. Her manager sends her an invite.
 1. Dana receives an email invite and clicks the link.
 2. The click verifies her email address (`emailVerified = true` in Keycloak).
 3. Dana is prompted to log in with her system-assigned username and set a password (existing required-action flow).
-4. After authentication, she has exactly one pending invitation. It is auto-accepted. No list to manage.
-5. A toast confirmation appears: "{Inviter} invited you to join {Account}" with a "Not you? Decline" action.
+4. After authentication, she sees an invite review screen — one row per pending invitation, even if she has only one.
+5. Dana taps Accept on the Account's row.
 6. Dana lands in the product inside that Account.
 
-**Multiple invites variant:** Dana was invited to two Accounts. After authentication, she sees an invite picker — one row per Account — and can accept or decline each independently.
+(This is now one unified behavior for one or more invitations — not a "variant." Dana invited to two Accounts sees the same screen with two rows and can accept or decline each independently.)
 
 **User-Service failure variant:** The User-Service call fails during invite acceptance. Dana is admitted to the product. A quiet banner appears only if a manual retry is needed. The retry runs in the background; Dana sees no blocking error.
 
@@ -154,13 +154,13 @@ Requirements are written as capabilities — what the system allows or enforces,
 | ID | Requirement |
 |----|-------------|
 | FR-INV-1 | Clicking an invitation link in email sets `emailVerified = true` on the Agent's Keycloak account. |
-| FR-INV-2 | After authentication, if the Agent has exactly one pending invitation, the system auto-accepts it without requiring the Agent to interact with an accept/reject list. |
-| FR-INV-3 | After auto-acceptance, a toast notification is displayed with the copy "{Inviter's display name} invited you to join {Account}" and a "Not you? Decline" secondary action. |
-| FR-INV-4 | If the Agent has more than one pending invitation after authentication, the system presents an invite picker. Each row shows the Account name and Inviter. The Agent can accept or decline each invitation independently. |
+| FR-INV-2 | *(Superseded 2026-08-13 — auto-accept removed. See FR-INV-4, which now covers one or more pending invitations.)* |
+| FR-INV-3 | *(Superseded 2026-08-13 — no auto-acceptance event to confirm. Accept/decline is now an explicit choice on the review screen, FR-INV-4.)* |
+| FR-INV-4 | If the Agent has one or more pending invitations after authentication, the system presents an invite review screen (a single row when there is one invitation). Each row shows the Account name and Inviter. The Agent can accept or decline each invitation independently, regardless of any existing Account memberships. |
 | FR-INV-5 | The User-Service call that completes invite acceptance is non-blocking and asynchronous. It does not gate the Agent's entry into the product. |
 | FR-INV-6 | If the User-Service call fails, the Agent is admitted to the product and the system retries in the background. [ASSUMPTION] Up to 3 retries with 30-second backoff. If all retries fail, a quiet banner is shown: "We had trouble syncing your account — tap to retry." No blocking error screen is presented. |
 | FR-INV-7 | The system does not present a blank screen at any point during invite acceptance or business provisioning. |
-| FR-INV-8 | When the Agent taps "Not you? Decline" on the auto-accept toast, the system revokes the invitation acceptance, removes the Agent from the Account, and logs the Agent out, returning them to the login screen. |
+| FR-INV-8 | *(Superseded 2026-08-13 — decline now happens before any membership is granted, via FR-INV-4's review screen. No post-hoc revocation or forced logout is needed; declining simply revokes the invitation and notifies the inviter.)* |
 
 ### 5.4 Passkeys (FR-PK)
 
@@ -230,7 +230,7 @@ The following metrics define success for this initiative. Items marked `[ASSUMPT
 | Login success rate (password) | [ASSUMPTION: ~63% per industry avg] | ≥ 85% | FR-L-9, FR-L-10 |
 | Login success rate (passkey, where available) | — (new capability) | ≥ 90% | FR-PK-1–5 |
 | Invite-to-product conversion (invited Agents completing onboarding) | [ASSUMPTION: currently unmeasured] | ≥ 70% within 24 h of invite | FR-INV-1–4 |
-| Time from invite click to product landing | [ASSUMPTION: current > 3 steps] | ≤ 2 steps after login | FR-INV-2, FR-INV-3 |
+| Time from invite click to product landing | [ASSUMPTION: current > 3 steps] | ≤ 2 steps after login [AT RISK 2026-08-13: auto-accept removed (see FR-INV-4); an explicit accept tap is now required, kept as an aspirational target pending a lighter-weight mechanism] | FR-INV-4 |
 | Login-related support tickets (password resets, lockout confusion) | [ASSUMPTION: currently unmeasured] | Reduce by 40% within 60 days of launch | FR-L-9, FR-L-10 |
 | WCAG 2.1 AA audit violations on in-scope screens | [ASSUMPTION: multiple current] | Zero blocking violations at launch | NFR-A-1–NFR-A-6 |
 | User-Service-induced login failures | [ASSUMPTION: measurable today] | Zero (non-blocking path) | NFR-S-3, FR-INV-5, FR-INV-6 |

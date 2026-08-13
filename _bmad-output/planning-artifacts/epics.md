@@ -268,7 +268,7 @@ Multi-Account Agents pick the right Account quickly. Delivers the "Select Accoun
 **FRs covered:** FR-AS-1..8, AR-11, NFR-P-2, UX-DR5, UX-DR6, UX-DR11, UX-DR16 (picker states).
 
 ### Epic 5: Invited Agent Onboarding
-Invited Agents go from invite email to inside their Account with zero decision screens. Delivers invite-link email verification, auto-accept of a single invitation with toast + "Not you? Decline", a multi-invite picker, and the non-blocking async User-Service refactor with background retry and quiet banner — no blank screens.
+Invited Agents go from invite email to an explicit accept/reject review step for every pending invitation, then straight into their Account. Delivers invite-link email verification, a unified invite review screen (single row for one invitation, a picker for several), and the non-blocking async User-Service refactor with background retry and quiet banner — no blank screens.
 **FRs covered:** FR-INV-1..8, AR-6, AR-7, AR-8, AR-9, NFR-S-3, UX-DR9, UX-DR10, UX-DR16 (invitation states).
 
 ## Epic 1: Platform Upgrade & Design System Foundation
@@ -778,6 +778,8 @@ So that I can proceed straight into the login/onboarding flow.
 
 ### Story 5.2: Auto-accept single invitation with toast & decline
 
+> **Superseded 2026-08-13.** AC-1/AC-2/AC-3 (auto-accept + toast + decline) are replaced — see Story 5.5. Root cause and rationale: `_bmad-output/implementation-artifacts/investigations/invitation-review-screen-not-showing-investigation.md`.
+
 As an invited Agent with one pending invitation,
 I want it accepted automatically with a clear confirmation,
 So that I land in my Account without managing a list.
@@ -862,7 +864,41 @@ So that a downstream outage never blocks me at the door.
 
 Align the three shipped auth screens with the June 2026 HTML mockups (`screen-login.html`, `screen-select-account.html`, `screen-invite-accepted.html`) while keeping the Epic 1 token/component CSS architecture (`tokens.css`, `components.css`, screen-specific CSS).
 
+### Story 5.5: Unify invitation review for one or more invitations
+
+As an invited Agent,
+I want to explicitly accept or decline every pending invitation, whether there's one or several,
+So that I always make an informed decision before joining an Account.
+
+> **Working Repositories:** `keycloak-multi-tenancy` (Java SPI) — no theme changes required; `review-invitations.ftl` already renders any invitation count.
+>
+> Supersedes Story 5.2 (AC-1/AC-2/AC-3). Rationale and impact analysis: `_bmad-output/implementation-artifacts/investigations/invitation-review-screen-not-showing-investigation.md` and `_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-13.md`.
+
+**Acceptance Criteria:**
+
+**Given** the Agent has one or more pending invitations after authentication
+**When** the `review-tenant-invitations` required action runs
+**Then** the existing `review-invitations.ftl` review screen is presented — a single row when there is one invitation — instead of silently auto-accepting (FR-INV-4)
+
+**Given** the Agent has exactly one pending invitation and already belongs to one or more other Accounts
+**When** the required action runs
+**Then** the same review screen is presented — existing memberships do not trigger auto-accept (FR-INV-4)
+
+**Given** the review screen is presented for any invitation count
+**When** the Agent accepts or declines
+**Then** `processAction()` handles it exactly as it already does for the multi-invite case — no new form-handling logic
+
+**Given** the auto-accept branch is removed
+**When** the codebase is reviewed
+**Then** `ToastInfoResource`, `InviteDeclineResource`, the three `TOAST_*` session-note constants, their `MultitenancyRootResource` route registrations, and the account-theme toast JS/decline link are all retired (dead code — confirmed single producer/consumer, no remaining callers per FR-INV-8)
+
+**Given** the retirement above
+**When** the test suite is reviewed
+**Then** `UserServiceAsyncTest.singleAutoAccept_toastNotesSetUnconditionally` and the 3 `InviteDeclineTest` tests are rewritten or removed with rationale recorded; `MultiInvitePickerTest` is verified to have no ">1"-only assumption and extended to cover the single-invitation case
+
 ### Story 6.1: Login, Select Account & Invite Accepted mockup parity
+
+> **Note (2026-08-13):** AC-3/AC-4 (full-screen `invite-accepted.ftl` confirmation) were never implemented despite this story's "done" status — confirmed by commit and file-history trace across both repos. Moot under Story 5.5's unified design; flagged as a documentation-integrity item, not reopened by this proposal.
 
 As an Agent signing in or onboarding,
 I want the login, account picker, and invite-accepted screens to match the approved mockups,

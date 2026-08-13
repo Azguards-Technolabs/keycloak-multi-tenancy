@@ -49,7 +49,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-12
-last_updated: 2026-06-29  # epic-3 passkey dismiss loop fix (26.6.9) + BMAD docs
+last_updated: 2026-08-13  # story 5.5 code-reviewed: 2 lockout bugs fixed (D1 IDP-scope, D2 already-member), back to in-progress for guard tests + CI
 project: keycloak-multi-tenancy
 project_key: NOKEY
 tracking_system: file-system
@@ -96,6 +96,7 @@ development_status:
   5-2-auto-accept-single-invitation-with-toast-decline: done
   5-3-multi-invite-picker: done
   5-4-non-blocking-async-user-service-sync-retry-banner: done
+  5-5-unify-invitation-review-for-single-and-multi: in-progress
   epic-5-retrospective: optional
 
   # Epic 6: Auth Screen Mockup Parity

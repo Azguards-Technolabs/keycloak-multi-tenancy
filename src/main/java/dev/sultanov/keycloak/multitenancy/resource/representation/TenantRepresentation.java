@@ -31,4 +31,10 @@ public class TenantRepresentation {
 
     @Schema(description = "Attributes of the tenant")
     private Map<String, List<String>> attributes = new HashMap<>();
+
+    @Schema(description = "Optional: grant tenant-admin membership to this user ID instead of the caller. "
+            + "Only honored for callers holding the tenants-manager role; trusted service callers "
+            + "(e.g. the application backend creating a tenant on behalf of an end user) use this "
+            + "so the real user — not the calling service account — becomes the tenant owner.")
+    private String ownerUserId;
 }
